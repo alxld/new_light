@@ -30,10 +30,6 @@ def setup_platform(
     ent = OfficeLight(hass)
     add_entities([ent])
 
-    hass.components.mqtt.async_subscribe(
-        "zigbee2mqtt/Office Switch/action", ent.message_received
-    )
-
 
 class Modes(Enum):
     NORMAL = 0
@@ -53,6 +49,10 @@ class OfficeLight(LightEntity):
         self._brightness = None
         self._mode = Modes.NORMAL
         self._hass = hass
+
+        self._hass.components.mqtt.async_subscribe(
+            "zigbee2mqtt/Office Switch/action", self.message_received
+        )
 
         hass.states.set("new_light.fake_office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
@@ -109,4 +109,4 @@ class OfficeLight(LightEntity):
     @callback
     def message_received(topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        self._hass.states.async_set("new_light.fake_office_light", payload)
+        self._hass.states.set("new_light.fake_office_light", payload)
