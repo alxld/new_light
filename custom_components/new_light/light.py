@@ -84,7 +84,7 @@ class OfficeLight(LightEntity):
         """Return true if light is on."""
         return self._state == "on"
 
-    def turn_on(self, **kwargs: Any) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on.
         You can skip the brightness part if your light does not support
         brightness control.
@@ -93,19 +93,21 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
-        self._hass.states.set("new_light.fake_office_light", "on")
-        self._hass.services.call(
+        self._hass.states.async_set("new_light.fake_office_light", "on")
+        await self._hass.services.async_call(
             "light",
             "turn_on",
             {"entity_id": self._light, "brightness": self._brightness},
         )
 
-    def turn_off(self, **kwargs: Any) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = "off"
-        self._hass.states.set("new_light.fake_office_light", "off")
-        self._hass.services.call("light", "turn_off", {"entity_id": self._light})
+        self._hass.states.async_set("new_light.fake_office_light", "off")
+        await self._hass.services.async_call(
+            "light", "turn_off", {"entity_id": self._light}
+        )
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -115,12 +117,15 @@ class OfficeLight(LightEntity):
         # self._state = self._light.is_on()
         # self._brightness = self._light.brightness
 
-    # @callback
     def message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
         self._hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
 
-        if payload == "on-press":
-            self.turn_on()
-        elif payload == "off-press":
-            self.turn_off()
+        if "on-press" in payload:
+            self.async_turn_on()
+        elif "off-press" in payload:
+            self.async_turn_off()
+        else:
+            self._hass.states.async_set(
+                "new_light.fake_office_light", f"ENT Fail: {payload}"
+            )
