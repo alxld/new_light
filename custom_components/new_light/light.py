@@ -12,7 +12,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 _LOGGER = logging.getLogger(__name__)
 
-light_group = 'light.office_group'
+#light_group = 'light.office_group'
 
 def setup_platform(hass: HomeAssistant, config: ConfigType, add_entities: AddEntitiesCallback, discovery_info: DiscoveryInfoType) | None = None) -> None:
     """Set up new_light platform"""
@@ -33,8 +33,8 @@ class OfficeLight(LightEntity):
     def __init__(self, hass) -> None:
         """Initialize Office Light."""
         super.__init__()
-        self._light = light_group
-        self._name = light_group
+        self._light = "light.office_group"
+        self._name = "light.office_group""
         self._state = None
         self._brightness = None
         self._mode = Modes.NORMAL
