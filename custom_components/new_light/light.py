@@ -84,7 +84,7 @@ class OfficeLight(LightEntity):
         """Return true if light is on."""
         return self._state == "on"
 
-    def turn_on(self, **kwargs: Any) -> None:
+    async def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on.
         You can skip the brightness part if your light does not support
         brightness control.
@@ -100,7 +100,7 @@ class OfficeLight(LightEntity):
             {"entity_id": self._light, "brightness": self._brightness},
         )
 
-    def turn_off(self, **kwargs: Any) -> None:
+    async def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = "off"
