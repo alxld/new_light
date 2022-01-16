@@ -25,7 +25,7 @@ def setup_platform(
     # We only want this platform to be set up via discovery.
     if discovery_info is None:
         return
-    hass.states.set("new_light.office_light", "Setup")
+    hass.states.set("new_light.fake_office_light", "Setup")
     add_entities([OfficeLight(hass)])
 
 
@@ -41,7 +41,6 @@ class OfficeLight(LightEntity):
 
     def __init__(self, hass) -> None:
         """Initialize Office Light."""
-        super.__init__()
         self._light = light_group
         self._name = "FakeOfficeLight"
         self._state = None
@@ -49,7 +48,7 @@ class OfficeLight(LightEntity):
         self._mode = Modes.NORMAL
         self._hass = hass
 
-        hass.states.set("new_light.office_light", "Initialized")
+        hass.states.set("new_light.fake_office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
 
     @property
@@ -79,8 +78,8 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
-        hass.states.set("new_light.office_light", "on")
-        hass.services.call(
+        self._hass.states.set("new_light.fake_office_light", "on")
+        self._hass.services.call(
             "light",
             "turn_on",
             {"entity_id": self._light, "brightness": self._brightness},
@@ -90,8 +89,8 @@ class OfficeLight(LightEntity):
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = "off"
-        hass.states.set("new_light.office_light", "off")
-        hass.services.call("light", "turn_off", {"entity_id": self._light})
+        self._hass.states.set("new_light.fake_office_light", "off")
+        self._hass.services.call("light", "turn_off", {"entity_id": self._light})
 
     def update(self) -> None:
         """Fetch new state data for this light.
