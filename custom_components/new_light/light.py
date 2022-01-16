@@ -62,7 +62,7 @@ class OfficeLight(LightEntity):
         self._brightness = None
         self._mode = Modes.NORMAL
 
-        self.hass.states.async_set("new_light.fake_office_light", "Initialized")
+        # self.hass.states.async_set("new_light.fake_office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
 
     @property
@@ -99,6 +99,22 @@ class OfficeLight(LightEntity):
             {"entity_id": self._light, "brightness": self._brightness},
         )
 
+    def turn_on(self, **kwargs: Any) -> None:
+        """Instruct the light to turn on.
+        You can skip the brightness part if your light does not support
+        brightness control.
+        """
+
+        self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
+        self._state = "on"
+        self._mode = Modes.NORMAL
+        self.hass.states.set("new_light.fake_office_light", "on")
+        self.hass.services.call(
+            "light",
+            "turn_on",
+            {"entity_id": self._light, "brightness": self._brightness},
+        )
+
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
@@ -107,6 +123,13 @@ class OfficeLight(LightEntity):
         await self.hass.services.async_call(
             "light", "turn_off", {"entity_id": self._light}
         )
+
+    def turn_off(self, **kwargs: Any) -> None:
+        """Instruct the light to turn off."""
+        self._brightness = 0
+        self._state = "off"
+        self.hass.states.set("new_light.fake_office_light", "off")
+        self.hass.services.call("light", "turn_off", {"entity_id": self._light})
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -121,9 +144,9 @@ class OfficeLight(LightEntity):
         self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
 
         if "on-press" in payload:
-            self.async_turn_on()
+            self.turn_on()
         elif "off-press" in payload:
-            self.async_turn_off()
+            self.turn_off()
         else:
             self.hass.states.async_set(
                 "new_light.fake_office_light", f"ENT Fail: {payload}"
