@@ -7,7 +7,8 @@ from homeassistant.components.light import ATTR_BRIGHTNESS, LightEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from homeassistant.components import mqtt
+
+# from homeassistant.components import mqtt
 
 from . import DOMAIN
 
@@ -16,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 light_group = "light.office_group"
 
 
-def setup_platform(
+async def async_setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
     add_entities: AddEntitiesCallback,
@@ -29,6 +30,10 @@ def setup_platform(
     hass.states.set("new_light.fake_office_light", "Setup")
     ent = OfficeLight(hass)
     add_entities([ent])
+
+    await hass.components.mqtt.async_subscribe(
+        "zigbee2mqtt/Office Switch/action", self.message_received
+    )
 
 
 class Modes(Enum):
@@ -50,11 +55,7 @@ class OfficeLight(LightEntity):
         self._mode = Modes.NORMAL
         self._hass = hass
 
-        self._hass.components.mqtt.async_subscribe(
-            "zigbee2mqtt/Office Switch/action", self.message_received
-        )
-
-        hass.states.set("new_light.fake_office_light", "Initialized")
+        hass.states.async_set("new_light.fake_office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
 
     @property
@@ -84,8 +85,8 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
-        self._hass.states.set("new_light.fake_office_light", "on")
-        self._hass.services.call(
+        self._hass.states.async_set("new_light.fake_office_light", "on")
+        self._hass.services.async_call(
             "light",
             "turn_on",
             {"entity_id": self._light, "brightness": self._brightness},
@@ -95,8 +96,8 @@ class OfficeLight(LightEntity):
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = "off"
-        self._hass.states.set("new_light.fake_office_light", "off")
-        self._hass.services.call("light", "turn_off", {"entity_id": self._light})
+        self._hass.states.async_set("new_light.fake_office_light", "off")
+        self._hass.services.async_call("light", "turn_off", {"entity_id": self._light})
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -109,4 +110,4 @@ class OfficeLight(LightEntity):
     @callback
     def message_received(topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        self._hass.states.set("new_light.fake_office_light", payload)
+        self._hass.states.async_set("new_light.fake_office_light", payload)

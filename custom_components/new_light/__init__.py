@@ -7,9 +7,9 @@ from homeassistant.helpers.typing import ConfigType
 DOMAIN = "new_light"
 
 
-def setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Your controller/hub specific code."""
-    hass.states.set("new_light.fake_office_light", "pre_init")
+    hass.states.async_set("new_light.fake_office_light", "pre_init")
     hass.data[DOMAIN] = {"temperature": 23}
     hass.helpers.discovery.load_platform("light", DOMAIN, {}, config)
 
