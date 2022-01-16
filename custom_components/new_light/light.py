@@ -43,7 +43,7 @@ class OfficeLight(LightEntity):
         """Initialize Office Light."""
         super.__init__()
         self._light = light_group
-        self._name = light_group
+        self._name = "FakeOfficeLight"
         self._state = None
         self._brightness = None
         self._mode = Modes.NORMAL
