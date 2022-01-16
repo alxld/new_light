@@ -15,6 +15,7 @@ from . import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 light_group = "light.office_group"
+brightness_step = 10
 
 
 async def async_setup_platform(
@@ -88,7 +89,6 @@ class OfficeLight(LightEntity):
         You can skip the brightness part if your light does not support
         brightness control.
         """
-
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
@@ -98,22 +98,7 @@ class OfficeLight(LightEntity):
             "turn_on",
             {"entity_id": self._light, "brightness": self._brightness},
         )
-
-    # def turn_on(self, **kwargs: Any) -> None:
-    #    """Instruct the light to turn on.
-    #    You can skip the brightness part if your light does not support
-    #    brightness control.
-    #    """
-    #
-    #    self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
-    #    self._state = "on"
-    #    self._mode = Modes.NORMAL
-    #    self.hass.states.set("new_light.fake_office_light", "on")
-    #    self.hass.services.call(
-    #        "light",
-    #        "turn_on",
-    #        {"entity_id": self._light, "brightness": self._brightness},
-    #    )
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
@@ -123,13 +108,24 @@ class OfficeLight(LightEntity):
         await self.hass.services.async_call(
             "light", "turn_off", {"entity_id": self._light}
         )
+        self.async_write_ha_state()
 
-    # def turn_off(self, **kwargs: Any) -> None:
-    #    """Instruct the light to turn off."""
-    #    self._brightness = 0
-    #    self._state = "off"
-    #    self.hass.states.set("new_light.fake_office_light", "off")
-    #    self.hass.services.call("light", "turn_off", {"entity_id": self._light})
+    async def up_brightness(self) -> None:
+        """Increase brightness by one step"""
+        if self._brightness > (255 - brightness_step):
+            self._brightness = 255
+        else:
+            self._brightness = self._brightness + brightness_step
+
+        self.async_turn_on(kwargs={"brightness": self._brightness})
+
+    async def down_brightness(self) -> None:
+        """Decrease brightness by one step"""
+        if self._brightness < brightness_step:
+            self.async_turn_off()
+        else:
+            self._brightness = self._brightness - brightness_step
+            self.async_turn_on(kwargs={"brightness": self._brightness})
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -143,10 +139,14 @@ class OfficeLight(LightEntity):
         """A new MQTT message has been received."""
         self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
 
-        if "on-press" in payload:
+        if payload == "on-press":
             await self.async_turn_on()
-        elif "off-press" in payload:
+        elif payload == "off-press":
             await self.async_turn_off()
+        elif payload == "up-press":
+            await self.up_brightness()
+        elif payload == "down-press":
+            await self.down_brightness()
         else:
             self.hass.states.async_set(
                 "new_light.fake_office_light", f"ENT Fail: {payload}"
