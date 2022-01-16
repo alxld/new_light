@@ -84,7 +84,7 @@ class OfficeLight(LightEntity):
         """Return true if light is on."""
         return self._state == "on"
 
-    async def turn_on(self, **kwargs: Any) -> None:
+    def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on.
         You can skip the brightness part if your light does not support
         brightness control.
@@ -93,19 +93,19 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
-        self._hass.states.async_set("new_light.fake_office_light", "on")
-        self._hass.services.async_call(
+        self._hass.states.set("new_light.fake_office_light", "on")
+        self._hass.services.call(
             "light",
             "turn_on",
             {"entity_id": self._light, "brightness": self._brightness},
         )
 
-    async def turn_off(self, **kwargs: Any) -> None:
+    def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = "off"
-        self._hass.states.async_set("new_light.fake_office_light", "off")
-        self._hass.services.async_call("light", "turn_off", {"entity_id": self._light})
+        self._hass.states.set("new_light.fake_office_light", "off")
+        self._hass.services.call("light", "turn_off", {"entity_id": self._light})
 
     def update(self) -> None:
         """Fetch new state data for this light.
