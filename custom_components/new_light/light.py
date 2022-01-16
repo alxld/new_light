@@ -2,9 +2,6 @@
 from __future__ import annotations
 import logging
 from enum import Enum
-
-# import new_light
-# import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.light import ATTR_BRIGHTNESS, LightEntity
 from homeassistant.core import HomeAssistant
@@ -18,18 +15,6 @@ _LOGGER = logging.getLogger(__name__)
 light_group = "light.office_group"
 
 
-# def setup_platform(
-#    hass: HomeAssistant,
-#    config: ConfigType,
-#    add_entities: AddEntitiesCallback,
-#    discovery_info: DiscoveryInfoType | None = None,
-# ) -> None:
-#    """Set up new_light platform"""
-#
-#    hass.states.set("new_light.office_light", "Setup")
-#    add_entities([OfficeLight(hass)])
-
-
 def setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
@@ -41,7 +26,7 @@ def setup_platform(
     if discovery_info is None:
         return
     hass.states.set("new_light.office_light", "Setup")
-    # add_entities([OfficeLight(hass)])
+    add_entities([OfficeLight(hass)])
 
 
 class Modes(Enum):
