@@ -40,7 +40,7 @@ def setup_platform(
     if discovery_info is None:
         return
     hass.states.set("new_light.office_light", "Setup")
-    add_entities([OfficeLight(hass)])
+    # add_entities([OfficeLight(hass)])
 
 
 class Modes(Enum):
