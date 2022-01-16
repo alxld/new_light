@@ -10,6 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+from . import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
 light_group = "light.office_group"
@@ -24,7 +26,7 @@ def setup_platform(
     """Set up new_light platform"""
 
     hass.states.set("new_light.office_light", "Setup")
-    add_entities(OfficeLight(hass))
+    add_entities([OfficeLight(hass)])
 
 
 class Modes(Enum):
