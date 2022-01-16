@@ -1,0 +1,15 @@
+{
+  "domain": "new_light",
+  "name": "new_light",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/new_light",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "dependencies": [],
+  "codeowners": [
+    "@alxld"
+  ],
+  "iot_class": "local_polling"
+}
