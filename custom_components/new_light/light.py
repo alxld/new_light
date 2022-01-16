@@ -15,8 +15,11 @@ from . import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 light_group = "light.office_group"
-brightness_step = 10
+brightness_step = 25
 
+#TODO: Up/Down hold transitions
+#TODO: Poll state of light on startup to set object initial state
+#TODO: Parameterize transition times (up, down, hold)
 
 async def async_setup_platform(
     hass: HomeAssistant,
@@ -92,7 +95,7 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
-        self.hass.states.async_set("new_light.fake_office_light", "on")
+        self.hass.states.async_set("new_light.fake_office_light", f"on: {self._brightness")
         await self.hass.services.async_call(
             "light",
             "turn_on",
@@ -119,7 +122,7 @@ class OfficeLight(LightEntity):
         else:
             self._brightness = self._brightness + brightness_step
 
-        await self.async_turn_on(kwargs={"brightness": self._brightness})
+        await self.async_turn_on(brightness=self._brightness)
 
     async def down_brightness(self) -> None:
         """Decrease brightness by one step"""
@@ -129,7 +132,7 @@ class OfficeLight(LightEntity):
             await self.async_turn_off()
         else:
             self._brightness = self._brightness - brightness_step
-            await self.async_turn_on(kwargs={"brightness": self._brightness})
+            await self.async_turn_on(brightness=self._brightness)
 
     def update(self) -> None:
         """Fetch new state data for this light.
