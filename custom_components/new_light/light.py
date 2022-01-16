@@ -31,8 +31,13 @@ async def async_setup_platform(
     ent = OfficeLight(hass)
     add_entities([ent])
 
+    @callback
+    def message_received(topic: str, payload: str, qos: int) -> None:
+        """A new MQTT message has been received."""
+        hass.states.async_set("new_light.fake_office_light", payload)
+
     await ret = hass.components.mqtt.async_subscribe(
-        "zigbee2mqtt/Office Switch/action", ent.message_received
+        "zigbee2mqtt/Office Switch/action", message_received
     )
 
     hass.states.async_set("new_light.fake_office_light", f"Subscribed to {ret}")
