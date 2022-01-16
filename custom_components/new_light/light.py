@@ -67,12 +67,14 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = 'on'
         self._mode = Modes.NORMAL
+        hass.states.set("new_light.office_light", "on")
         hass.services.call('light', 'turn_on', {'entity_id': self._light, 'brightness': self._brightness})
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = 'off'
+        hass.states.set("new_light.office_light", "off")
         hass.services.call('light', 'turn_off', {'entity_id': self._light})
 
     def update(self) -> None:

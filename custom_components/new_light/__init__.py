@@ -12,7 +12,7 @@ PLATFORMS: list[str] = ["light"]
 
 
 def setup(hass, config):
-    hass.states.set("new_light.offce_light", "Alive")
+    hass.states.set("new_light.office_light", "Alive")
     return True
 
 
