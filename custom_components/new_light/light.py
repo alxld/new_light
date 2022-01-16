@@ -7,6 +7,7 @@ from homeassistant.components.light import ATTR_BRIGHTNESS, LightEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.components import mqtt
 
 from . import DOMAIN
 
@@ -51,6 +52,15 @@ class OfficeLight(LightEntity):
         hass.states.set("new_light.fake_office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
 
+    @callback
+    def message_received(topic: str, payload: str, qos: int) -> None:
+        """A new MQTT message has been received."""
+        hass.states.async_set("new_light.fake_office_light", payload)
+
+    await hass.components.mqtt.async_subscribe(
+        "zigbee2mqtt/Office Switch/action", message_received
+    )
+
     @property
     def name(self) -> str:
         """Return the display name of this light."""
@@ -67,7 +77,7 @@ class OfficeLight(LightEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true if light is on."""
-        return self._state
+        return self._state == "on"
 
     def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on.
