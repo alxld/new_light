@@ -2,10 +2,11 @@
 from __future__ import annotations
 import logging
 from enum import Enum
-import new_light
-import voluptuous as vol
+
+# import new_light
+# import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.light import ATTR_BRIGHTNESS, PLATFORM_SCHEMA, LightEntity
+from homeassistant.components.light import ATTR_BRIGHTNESS, LightEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType

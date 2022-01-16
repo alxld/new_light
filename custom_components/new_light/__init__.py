@@ -11,7 +11,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Your controller/hub specific code."""
     hass.states.set("new_light.office_light", "pre_init")
     hass.data[DOMAIN] = {"temperature": 23}
-    # hass.helpers.discovery.load_platform('light', DOMAIN, {}, config)
-    hass.helpers.discovery.load_platform("sensor", DOMAIN, {}, config)
+    hass.helpers.discovery.load_platform("light", DOMAIN, {}, config)
+    # hass.helpers.discovery.load_platform("sensor", DOMAIN, {}, config)
 
     return True
