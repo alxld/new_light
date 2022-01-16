@@ -31,10 +31,11 @@ async def async_setup_platform(
     ent = OfficeLight(hass)
     add_entities([ent])
 
-    await hass.components.mqtt.async_subscribe(
+    await ret = hass.components.mqtt.async_subscribe(
         "zigbee2mqtt/Office Switch/action", ent.message_received
     )
 
+    hass.states.async_set("new_light.fake_office_light", f"Subscribed to {ret}")
 
 class Modes(Enum):
     NORMAL = 0
