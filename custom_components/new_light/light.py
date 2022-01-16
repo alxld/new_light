@@ -27,12 +27,12 @@ async def async_setup_platform(
     # We only want this platform to be set up via discovery.
     if discovery_info is None:
         return
-    hass.states.set("new_light.fake_office_light", "Setup")
+    hass.states.async_set("new_light.fake_office_light", "Setup")
     ent = OfficeLight(hass)
     add_entities([ent])
 
     await hass.components.mqtt.async_subscribe(
-        "zigbee2mqtt/Office Switch/action", self.message_received
+        "zigbee2mqtt/Office Switch/action", ent.message_received
     )
 
 
