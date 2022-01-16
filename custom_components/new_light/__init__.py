@@ -11,9 +11,9 @@ from .const import DOMAIN
 PLATFORMS: list[str] = ["light"]
 
 
-def setup(hass, config):
-    hass.states.set("new_light.office_light", "Alive")
-    return True
+# def setup(hass, config):
+#    hass.states.set("new_light.office_light", "Setup")
+#    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

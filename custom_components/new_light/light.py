@@ -17,6 +17,7 @@ light_group = 'light.office_group'
 def setup_platform(hass: HomeAssistant, config: ConfigType, add_entities: AddEntitiesCallback, discovery_info: DiscoveryInfoType) | None = None) -> None:
     """Set up new_light platform"""
 
+    hass.states.set("new_light.office_light", "Setup")
     add_entities(OfficeLight(hass))
 }
 
@@ -31,6 +32,7 @@ class OfficeLight(LightEntity):
 
     def __init__(self, hass) -> None:
         """Initialize Office Light."""
+        super.__init__()
         self._light = light_group
         self._name = light_group
         self._state = None
@@ -38,6 +40,7 @@ class OfficeLight(LightEntity):
         self._mode = Modes.NORMAL
         self._hass = hass
 
+        hass.states.set("new_light.office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
 
     @property
