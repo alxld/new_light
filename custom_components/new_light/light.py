@@ -1,7 +1,7 @@
 """Platform for light integration"""
 from __future__ import annotations
 import logging
-from enum import enum
+from enum import Enum
 import new_light
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
@@ -12,20 +12,27 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 _LOGGER = logging.getLogger(__name__)
 
-#light_group = 'light.office_group'
+light_group = "light.office_group"
 
-def setup_platform(hass: HomeAssistant, config: ConfigType, add_entities: AddEntitiesCallback, discovery_info: DiscoveryInfoType) | None = None) -> None:
+
+def setup_platform(
+    hass: HomeAssistant,
+    config: ConfigType,
+    add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
+) -> None:
     """Set up new_light platform"""
 
     hass.states.set("new_light.office_light", "Setup")
     add_entities(OfficeLight(hass))
-}
 
-class Modes(enum):
+
+class Modes(Enum):
     NORMAL = 0
     COLOR = 1
     COLOR_TEMP = 2
     RIGHT_LIGHT = 3
+
 
 class OfficeLight(LightEntity):
     """Office Light."""
@@ -33,8 +40,8 @@ class OfficeLight(LightEntity):
     def __init__(self, hass) -> None:
         """Initialize Office Light."""
         super.__init__()
-        self._light = "light.office_group"
-        self._name = "light.office_group""
+        self._light = light_group
+        self._name = light_group
         self._state = None
         self._brightness = None
         self._mode = Modes.NORMAL
@@ -68,22 +75,26 @@ class OfficeLight(LightEntity):
         """
 
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
-        self._state = 'on'
+        self._state = "on"
         self._mode = Modes.NORMAL
         hass.states.set("new_light.office_light", "on")
-        hass.services.call('light', 'turn_on', {'entity_id': self._light, 'brightness': self._brightness})
+        hass.services.call(
+            "light",
+            "turn_on",
+            {"entity_id": self._light, "brightness": self._brightness},
+        )
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
-        self._state = 'off'
+        self._state = "off"
         hass.states.set("new_light.office_light", "off")
-        hass.services.call('light', 'turn_off', {'entity_id': self._light})
+        hass.services.call("light", "turn_off", {"entity_id": self._light})
 
     def update(self) -> None:
         """Fetch new state data for this light.
         This is the only method that should fetch new data for Home Assistant.
         """
-        #self._light.update()
-        #self._state = self._light.is_on()
-        #self._brightness = self._light.brightness
+        # self._light.update()
+        # self._state = self._light.is_on()
+        # self._brightness = self._light.brightness
