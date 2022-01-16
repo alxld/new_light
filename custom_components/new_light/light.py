@@ -116,6 +116,11 @@ class OfficeLight(LightEntity):
         # self._brightness = self._light.brightness
 
     # @callback
-    def message_received(topic: str, payload: str, qos: int) -> None:
+    def message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        self._hass.states.async_set("new_light.fake_office_light", payload)
+        self._hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
+
+        if payload == "on-press":
+            self.turn_on()
+        elif payload == "off-press":
+            self.turn_off()
