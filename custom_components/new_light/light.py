@@ -38,6 +38,8 @@ class OfficeLight(LightEntity):
         self._mode = Modes.NORMAL
         self._hass = hass
 
+        _LOGGER.info("OfficeLight initialized")
+
     @property
     def name(self) -> str:
         """Return the display name of this light."""

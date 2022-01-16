@@ -11,6 +11,11 @@ from .const import DOMAIN
 PLATFORMS: list[str] = ["light"]
 
 
+def setup(hass, config):
+    hass.states.set("new_light.offce_light", "Alive")
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up new_light from a config entry."""
     # TODO Store an API object for your platforms to access
