@@ -139,14 +139,14 @@ class OfficeLight(LightEntity):
         # self._state = self._light.is_on()
         # self._brightness = self._light.brightness
 
-    def message_received(self, topic: str, payload: str, qos: int) -> None:
+    async def message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
         self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
 
         if "on-press" in payload:
-            self.async_turn_on()
+            await self.async_turn_on()
         elif "off-press" in payload:
-            self.async_turn_off()
+            await self.async_turn_off()
         else:
             self.hass.states.async_set(
                 "new_light.fake_office_light", f"ENT Fail: {payload}"
