@@ -112,20 +112,24 @@ class OfficeLight(LightEntity):
 
     async def up_brightness(self) -> None:
         """Increase brightness by one step"""
-        if self._brightness > (255 - brightness_step):
+        if self._brightness == None:
+            self._brightness = brightness_step
+        elif self._brightness > (255 - brightness_step):
             self._brightness = 255
         else:
             self._brightness = self._brightness + brightness_step
 
-        self.async_turn_on(kwargs={"brightness": self._brightness})
+        await self.async_turn_on(kwargs={"brightness": self._brightness})
 
     async def down_brightness(self) -> None:
         """Decrease brightness by one step"""
-        if self._brightness < brightness_step:
-            self.async_turn_off()
+        if self._brightness == None:
+            await self.async_turn_off()
+        elif self._brightness < brightness_step:
+            await self.async_turn_off()
         else:
             self._brightness = self._brightness - brightness_step
-            self.async_turn_on(kwargs={"brightness": self._brightness})
+            await self.async_turn_on(kwargs={"brightness": self._brightness})
 
     def update(self) -> None:
         """Fetch new state data for this light.
