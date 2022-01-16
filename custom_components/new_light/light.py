@@ -17,14 +17,28 @@ _LOGGER = logging.getLogger(__name__)
 light_group = "light.office_group"
 
 
+# def setup_platform(
+#    hass: HomeAssistant,
+#    config: ConfigType,
+#    add_entities: AddEntitiesCallback,
+#    discovery_info: DiscoveryInfoType | None = None,
+# ) -> None:
+#    """Set up new_light platform"""
+#
+#    hass.states.set("new_light.office_light", "Setup")
+#    add_entities([OfficeLight(hass)])
+
+
 def setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up new_light platform"""
-
+    """Set up the light platform."""
+    # We only want this platform to be set up via discovery.
+    if discovery_info is None:
+        return
     hass.states.set("new_light.office_light", "Setup")
     add_entities([OfficeLight(hass)])
 
