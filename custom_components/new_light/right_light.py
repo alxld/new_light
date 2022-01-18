@@ -93,9 +93,9 @@ class RightLight:
         # Loop to create vivid trip points
         temp = midnight_early
         this_ptr = 0
-        trip_points['Vivid'] = []
+        self.trip_points['Vivid'] = []
         while temp < midnight_late:
-            trip_points['Vivid'].append( [ temp, vivid_trip_points[this_ptr] ] )
+            self.trip_points['Vivid'].append( [ temp, vivid_trip_points[this_ptr] ] )
 
             temp = temp + timestep
 
@@ -106,9 +106,9 @@ class RightLight:
         # Loop to create bright trip points
         temp = midnight_early
         this_ptr = 0
-        trip_points['Bright'] = []
+        self.trip_points['Bright'] = []
         while temp < midnight_late:
-            trip_points['Bright'].append( [ temp, bright_trip_points[this_ptr] ] )
+            self.trip_points['Bright'].append( [ temp, bright_trip_points[this_ptr] ] )
 
             temp = temp + timestep
 
@@ -119,9 +119,9 @@ class RightLight:
         # Loop to create 'one' trip points
         temp = midnight_early
         this_ptr = 0
-        trip_points['One'] = []
+        self.trip_points['One'] = []
         while temp < midnight_late:
-            trip_points['One'].append( [ temp, one_trip_points[this_ptr] ] )
+            self.trip_points['One'].append( [ temp, one_trip_points[this_ptr] ] )
 
             temp = temp + timestep
 
@@ -132,9 +132,9 @@ class RightLight:
         # Loop to create 'two' trip points
         temp = midnight_early
         this_ptr = 0
-        trip_points['Two'] = []
+        self.trip_points['Two'] = []
         while temp < midnight_late:
-            trip_points['Two'].append( [ temp, two_trip_points[this_ptr] ] )
+            self.trip_points['Two'].append( [ temp, two_trip_points[this_ptr] ] )
 
             temp = temp + timestep
 
