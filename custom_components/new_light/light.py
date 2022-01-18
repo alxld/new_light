@@ -68,6 +68,7 @@ class OfficeLight(LightEntity):
         self._name = "FakeOfficeLight"
         self._state = None
         self._brightness = None
+        self._brightness_override = 0
         self._mode = Modes.NORMAL
 
         # self.hass.states.async_set("new_light.fake_office_light", "Initialized")
@@ -108,28 +109,30 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
-        self.hass.states.async_set(
-            "new_light.fake_office_light", f"on: {self._brightness}"
-        )
-
-        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", f"{{\"brightness\": {self._brightness}, \"state\": \"on\"}}")
-        await self.hass.services.async_call(
-            "light",
-            "turn_on",
-            {"entity_id": self._light, "brightness": self._brightness},
-        )
+        await self._rightlight.turn_on(self._brightness, self._brightness_override)
+#        self.hass.states.async_set(
+#            "new_light.fake_office_light", f"on: {self._brightness}"
+#        )
+#
+#        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", f"{{\"brightness\": {self._brightness}, \"state\": \"on\"}}")
+#        await self.hass.services.async_call(
+#            "light",
+#            "turn_on",
+#            {"entity_id": self._light, "brightness": self._brightness},
+#        )
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = "off"
-        self.hass.states.async_set("new_light.fake_office_light", "off")
-
-        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", "OFF"})
-        await self.hass.services.async_call(
-            "light", "turn_off", {"entity_id": self._light}
-        )
+        await self._rightlight.disable_and_turn_off()
+#        self.hass.states.async_set("new_light.fake_office_light", "off")
+#
+#        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", "OFF"})
+#        await self.hass.services.async_call(
+#            "light", "turn_off", {"entity_id": self._light}
+#        )
         self.async_write_ha_state()
 
     async def up_brightness(self) -> None:

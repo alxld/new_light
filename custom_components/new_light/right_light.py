@@ -3,7 +3,7 @@ from homeassistant.core import HomeAssistant
 import logging, pytz
 from suntime import Sun, SunTimeException
 from datetime import date, timedelta
-import datetime
+import datetime, asyncio
 
 
 class RightLight:
@@ -17,6 +17,9 @@ class RightLight:
         self._logger = logging.getLogger(f"RightLight({self._entity})")
 
         self.trip_points = {}
+
+        self._ct_high = 5000
+        self._ct_scalar = 0.35
 
         cd = self._hass.config.as_dict()
         self._latitude = cd["latitude"]
@@ -36,7 +39,56 @@ class RightLight:
         self.defineTripPoints()
 
         #self._logger.error(f"Trip Points Normal: {self.trip_points['Normal']}")
-        self._logger.error(f"Trip Points Vivid: {self.trip_points['Vivid']}")
+        #self._logger.error(f"Trip Points Vivid: {self.trip_points['Vivid']}")
+
+    async def turn_on(self, brightness: int = 255, brightness_override: int = 0):
+        self._brightness = brightness
+        self._brightness_override = brightness_override
+        now = datetime.datetime.now()
+
+        # Find trip points around current time
+        for next in range(0, len(self.trip_points['Normal'])):
+            if self.trip_points['Normal'][next][0] >= now:
+                break
+        prev = next - 1
+
+        # Calculate how far through the trip point span we are now
+        prev_time = self.trip_points['Normal'][prev][0]
+        next_time = self.trip_points['Normal'][next][0]
+        time_ratio = (now - prev_time) / (next_time - prev_time)
+
+        # Compute br/ct for previous point
+        br_max_prev = self.trip_points['Normal'][prev][2] / 255
+        br_prev = br_max_prev * (self._brightness + self._brightness_override)
+
+        ct_max_prev = self.trip_points['Normal'][prev][1]
+        ct_delta_prev = (self._ct_high - ct_max_prev) * (1 - br_max_prev) * self.ct_scalar
+        ct_prev = ct_max_prev - ct_delta_prev
+
+        # Compute br/ct for next point
+        br_max_next = self.trip_points['Normal'][next][2] / 255
+        br_next = br_max_next * (self._brightness + self._brightness_override)
+
+        ct_max_next = self.trip_points['Normal'][next][1]
+        ct_delta_next = (self.ct_high - ct_max_next) * (1 - br_max_next) * self.ct_scalar
+        ct_next = ct_max_next - ct_delta_next
+
+        # Scale linearly to current time
+        br = (br_next - br_prev) * time_ratio + br_prev
+        ct = (ct_next - ct_prev) * time_ratio + ct_prev
+
+        self._mode = 'Normal'
+        self._hass.states.async_set( self._entity, f"rlon: {br},{ct}" )
+        await self.hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct})
+
+
+    async def disable_and_turn_off(self):
+        self._brightness = 0
+        self._hass.states.async_set(self._entity, "off")
+        await self.hass.services.async_call("light", "turn_off", {"entity_id": self._entity})
+
+    def disable(self):
+        pass
 
     def defineTripPoints(self):
         self.trip_points["Normal"] = []
@@ -100,7 +152,7 @@ class RightLight:
             temp = temp + timestep
 
             this_ptr = this_ptr + 1
-            if this_ptr > len(vivid_trip_points):
+            if this_ptr >= len(vivid_trip_points):
                 this_ptr = 0
 
         # Loop to create bright trip points
@@ -113,7 +165,7 @@ class RightLight:
             temp = temp + timestep
 
             this_ptr = this_ptr + 1
-            if this_ptr > len(bright_trip_points):
+            if this_ptr >= len(bright_trip_points):
                 this_ptr = 0
 
         # Loop to create 'one' trip points
@@ -126,7 +178,7 @@ class RightLight:
             temp = temp + timestep
 
             this_ptr = this_ptr + 1
-            if this_ptr > len(one_trip_points):
+            if this_ptr >= len(one_trip_points):
                 this_ptr = 0
 
         # Loop to create 'two' trip points
@@ -139,5 +191,5 @@ class RightLight:
             temp = temp + timestep
 
             this_ptr = this_ptr + 1
-            if this_ptr > len(two_trip_points):
+            if this_ptr >= len(two_trip_points):
                 this_ptr = 0
