@@ -7,6 +7,7 @@ from homeassistant.components.light import ATTR_BRIGHTNESS, LightEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from right_light import RightLight
 
 # from homeassistant.components import mqtt
 
@@ -68,6 +69,7 @@ class OfficeLight(LightEntity):
         self._state = None
         self._brightness = None
         self._mode = Modes.NORMAL
+        self._rightlight = RightLight(self._light, self._hass)
 
         # self.hass.states.async_set("new_light.fake_office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
