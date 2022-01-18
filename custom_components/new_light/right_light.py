@@ -44,7 +44,7 @@ class RightLight:
     async def turn_on(self, brightness: int = 255, brightness_override: int = 0):
         self._brightness = brightness
         self._brightness_override = brightness_override
-        now = datetime.datetime.now()
+        now = self._timezone.localize( datetime.datetime.now() )
 
         # Find trip points around current time
         for next in range(0, len(self.trip_points['Normal'])):
@@ -92,7 +92,7 @@ class RightLight:
 
     def defineTripPoints(self):
         self.trip_points["Normal"] = []
-        now = datetime.datetime.now()
+        now = self._timezone.localize( datetime.datetime.now() )
         midnight_early = now.replace(microsecond=0, second=0, minute=0, hour=0)
         midnight_late  = now.replace(microsecond=0, second=59, minute=59, hour=11)
         timestep = timedelta(minutes=2)
