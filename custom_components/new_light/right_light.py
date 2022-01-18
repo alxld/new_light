@@ -25,16 +25,16 @@ class RightLight:
         self._latitude = cd["latitude"]
         self._longitude = cd["longitude"]
         self._timezone = cd["time_zone"]
+        self._timezoneobj = pytz.timezone(self._timezone)
 
         self._logger.error(
             f"Initialized.  Lat/Long: {self._latitude}, {self._longitude}"
         )
 
         sun = Sun(self._latitude, self._longitude)
-        tz = pytz.timezone(self._timezone)
 
-        self.sunrise = sun.get_sunrise_time(date.today()).astimezone(tz)
-        self.sunset = sun.get_sunset_time(date.today()).astimezone(tz)
+        self.sunrise = sun.get_sunrise_time(date.today()).astimezone(self._timezoneobj)
+        self.sunset = sun.get_sunset_time(date.today()).astimezone(self._timezoneobj)
 
         self.defineTripPoints()
 
@@ -44,7 +44,7 @@ class RightLight:
     async def turn_on(self, brightness: int = 255, brightness_override: int = 0):
         self._brightness = brightness
         self._brightness_override = brightness_override
-        now = self._timezone.localize( datetime.datetime.now() )
+        now = self._timezoneobj.localize( datetime.datetime.now() )
 
         # Find trip points around current time
         for next in range(0, len(self.trip_points['Normal'])):
@@ -92,7 +92,7 @@ class RightLight:
 
     def defineTripPoints(self):
         self.trip_points["Normal"] = []
-        now = self._timezone.localize( datetime.datetime.now() )
+        now = self._timezoneobj.localize( datetime.datetime.now() )
         midnight_early = now.replace(microsecond=0, second=0, minute=0, hour=0)
         midnight_late  = now.replace(microsecond=0, second=59, minute=59, hour=11)
         timestep = timedelta(minutes=2)
