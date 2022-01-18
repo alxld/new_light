@@ -17,9 +17,11 @@ _LOGGER = logging.getLogger(__name__)
 light_group = "light.office_group"
 brightness_step = 25
 
-#TODO: Up/Down hold transitions
+#TODO: Up/Down hold transitions - dropped
 #TODO: Poll state of light on startup to set object initial state
 #TODO: Parameterize transition times (up, down, hold)
+#TODO: Add scenes to hold events from buttons
+#TODO: Add 'brightness_override' parameter to increase beyond default right_light settings
 
 async def async_setup_platform(
     hass: HomeAssistant,
@@ -96,11 +98,12 @@ class OfficeLight(LightEntity):
         self._state = "on"
         self._mode = Modes.NORMAL
         self.hass.states.async_set("new_light.fake_office_light", f"on: {self._brightness")
-        await self.hass.services.async_call(
-            "light",
-            "turn_on",
-            {"entity_id": self._light, "brightness": self._brightness},
-        )
+        await self.hass.components.mqtt.async_publish("zigbee2mqtt/Office/Set", {"brightness": self._brightness, "state": "on"})
+        #await self.hass.services.async_call(
+        #    "light",
+        #    "turn_on",
+        #    {"entity_id": self._light, "brightness": self._brightness},
+        #)
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -108,9 +111,10 @@ class OfficeLight(LightEntity):
         self._brightness = 0
         self._state = "off"
         self.hass.states.async_set("new_light.fake_office_light", "off")
-        await self.hass.services.async_call(
-            "light", "turn_off", {"entity_id": self._light}
-        )
+        await self.hass.components.mqtt.async_publish("zigbee2mqtt/Office/Set", {"brightness": 0, "state": "off"})
+        #await self.hass.services.async_call(
+        #    "light", "turn_off", {"entity_id": self._light}
+        #)
         self.async_write_ha_state()
 
     async def up_brightness(self) -> None:
