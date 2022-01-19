@@ -40,8 +40,8 @@ class RightLight:
         self.now = self._timezoneobj.localize( datetime.datetime.now() )
         self.sunrise = sun.get_sunrise_time(date.today()).astimezone(self._timezoneobj)
         self.sunset  = sun.get_sunset_time(date.today()).astimezone(self._timezoneobj)
-        self.sunrise.replace(day=datetime.datetime.now().day)
-        self.sunset.replace(day=datetime.datetime.now().day)
+        self.sunrise.replace(day=self.now.day)
+        self.sunset.replace(day=self.now.day)
 
         self.defineTripPoints()
 
