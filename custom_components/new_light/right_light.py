@@ -5,7 +5,6 @@ from suntime import Sun, SunTimeException
 from datetime import date, timedelta
 import datetime, asyncio
 
-#TODO: Put upper limit on brightness + override
 #TODO: Implement colors and other modes
 #TODO: Transition to next trip point
 #TODO: Schedule update at next trip point (hass.loop.call_later(hass, time_delta|float, HASS_JOB|CALLABLE))
@@ -25,6 +24,10 @@ class RightLight:
         self._ct_high = 5000
         self._ct_scalar = 0.35
 
+        self.on_transition = 0.1
+        self.off_transition = 0.1
+        self.dim_transition = 0.1
+
         cd = self._hass.config.as_dict()
         self._latitude = cd["latitude"]
         self._longitude = cd["longitude"]
@@ -40,8 +43,8 @@ class RightLight:
         self.now = self._timezoneobj.localize( datetime.datetime.now() )
         self.sunrise = sun.get_sunrise_time(date.today()).astimezone(self._timezoneobj)
         self.sunset  = sun.get_sunset_time(date.today()).astimezone(self._timezoneobj)
-        self.sunrise.replace(day=self.now.day)
-        self.sunset.replace(day=self.now.day)
+        self.sunrise = self.sunrise.replace(day=self.now.day)
+        self.sunset = self.sunset.replace(day=self.now.day)
 
         self.defineTripPoints()
 
@@ -62,6 +65,7 @@ class RightLight:
         prev_time = self.trip_points['Normal'][prev][0]
         next_time = self.trip_points['Normal'][next][0]
         time_ratio = (self.now - prev_time) / (next_time - prev_time)
+        time_rem = (next_time - self.now) / 1000
 
         self._logger.error(f"Now: {self.now}")
         self._logger.error(f"Prev/Next: {prev}, {next}, {prev_time}, {next_time}, {time_ratio}")
@@ -88,17 +92,25 @@ class RightLight:
         br = (br_next - br_prev) * time_ratio + br_prev
         ct = (ct_next - ct_prev) * time_ratio + ct_prev
 
+        if br > 255:
+            br = 255
+
         self._logger.error(f"Final: {br}/{ct}")
 
         self._mode = 'Normal'
         #self._hass.states.async_set( self._entity, f"rlon: {br},{ct}" )
-        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct})
+
+        # Turn on light to interpolated values
+        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": self.on_transition})
+
+        # Transition to next values
+        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
 
 
     async def disable_and_turn_off(self):
         self._brightness = 0
         #self._hass.states.async_set(self._entity, "off")
-        await self._hass.services.async_call("light", "turn_off", {"entity_id": self._entity})
+        await self._hass.services.async_call("light", "turn_off", {"entity_id": self._entity, "transition": self.off_transition})
 
     def disable(self):
         pass
