@@ -37,6 +37,7 @@ class RightLight:
 
         sun = Sun(self._latitude, self._longitude)
 
+        self.now = self._timezoneobj.localize( datetime.datetime.now() )
         self.sunrise = sun.get_sunrise_time(date.today()).astimezone(self._timezoneobj)
         self.sunset  = sun.get_sunset_time(date.today()).astimezone(self._timezoneobj)
         self.sunrise.replace(day=datetime.datetime.now().day)
@@ -50,20 +51,19 @@ class RightLight:
     async def turn_on(self, brightness: int = 255, brightness_override: int = 0):
         self._brightness = brightness
         self._brightness_override = brightness_override
-        now = self._timezoneobj.localize( datetime.datetime.now() )
 
         # Find trip points around current time
         for next in range(0, len(self.trip_points['Normal'])):
-            if self.trip_points['Normal'][next][0] >= now:
+            if self.trip_points['Normal'][next][0] >= self.now:
                 break
         prev = next - 1
 
         # Calculate how far through the trip point span we are now
         prev_time = self.trip_points['Normal'][prev][0]
         next_time = self.trip_points['Normal'][next][0]
-        time_ratio = (now - prev_time) / (next_time - prev_time)
+        time_ratio = (self.now - prev_time) / (next_time - prev_time)
 
-        self._logger.error(f"Now: {now}")
+        self._logger.error(f"Now: {self.now}")
         self._logger.error(f"Prev/Next: {prev}, {next}, {prev_time}, {next_time}, {time_ratio}")
 
         # Compute br/ct for previous point
@@ -105,9 +105,8 @@ class RightLight:
 
     def defineTripPoints(self):
         self.trip_points["Normal"] = []
-        now = self._timezoneobj.localize( datetime.datetime.now() )
-        midnight_early = now.replace(microsecond=0, second=0, minute=0, hour=0)
-        midnight_late  = now.replace(microsecond=0, second=59, minute=59, hour=11)
+        midnight_early = self.now.replace(microsecond=0, second=0, minute=0, hour=0)
+        midnight_late  = self.now.replace(microsecond=0, second=59, minute=59, hour=11)
         timestep = timedelta(minutes=2)
 
         self.trip_points["Normal"].append( [midnight_early, 2500, 150] )  # Midnight morning
@@ -118,7 +117,7 @@ class RightLight:
         self.trip_points["Normal"].append( [self.sunset - timedelta(minutes=90), 4200, 255] )  # Sunset - 90
         self.trip_points["Normal"].append( [self.sunset - timedelta(minutes=30), 3200, 255] )   # Sunset = 30
         self.trip_points["Normal"].append( [self.sunset, 2700, 255]) # Sunset
-        self.trip_points["Normal"].append( [now.replace(microsecond=0, second=0, minute=30, hour=22), 2500, 255]) # 10:30
+        self.trip_points["Normal"].append( [self.now.replace(microsecond=0, second=0, minute=30, hour=22), 2500, 255]) # 10:30
         self.trip_points["Normal"].append( [midnight_late, 2500, 150]) # Midnight night
 
         vivid_trip_points = [
