@@ -110,10 +110,8 @@ class OfficeLight(LightEntity):
         self._state = "on"
         self._mode = Modes.NORMAL
         await self._rightlight.turn_on(self._brightness, self._brightness_override)
-#        self.hass.states.async_set(
-#            "new_light.fake_office_light", f"on: {self._brightness}"
-#        )
-#
+        self.hass.states.async_set("new_light.fake_office_light", f"on: {self._brightness}")
+
 #        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", f"{{\"brightness\": {self._brightness}, \"state\": \"on\"}}")
 #        await self.hass.services.async_call(
 #            "light",
@@ -127,8 +125,8 @@ class OfficeLight(LightEntity):
         self._brightness = 0
         self._state = "off"
         await self._rightlight.disable_and_turn_off()
-#        self.hass.states.async_set("new_light.fake_office_light", "off")
-#
+        self.hass.states.async_set("new_light.fake_office_light", "off")
+
 #        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", "OFF"})
 #        await self.hass.services.async_call(
 #            "light", "turn_off", {"entity_id": self._light}
@@ -177,6 +175,4 @@ class OfficeLight(LightEntity):
         elif payload == "down-press":
             await self.down_brightness()
         else:
-            self.hass.states.async_set(
-                "new_light.fake_office_light", f"ENT Fail: {payload}"
-            )
+            self.hass.states.async_set("new_light.fake_office_light", f"ENT Fail: {payload}")
