@@ -65,7 +65,7 @@ class RightLight:
         prev_time = self.trip_points['Normal'][prev][0]
         next_time = self.trip_points['Normal'][next][0]
         time_ratio = (self.now - prev_time) / (next_time - prev_time)
-        time_rem = (next_time - self.now) / 1000
+        time_rem = (next_time - self.now).seconds
 
         self._logger.error(f"Now: {self.now}")
         self._logger.error(f"Prev/Next: {prev}, {next}, {prev_time}, {next_time}, {time_ratio}")
@@ -104,8 +104,11 @@ class RightLight:
         await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": self.on_transition})
 
         # Transition to next values
-        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
+        self._hass.loop.call_later(self.on_transition*1000 + 100, self._runTransition, br_next, ct_next, time_rem)
+        #await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
 
+    def _runTransition(self, br, ct, time):
+        await self._hass.services.async_call("ligth", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": time})
 
     async def disable_and_turn_off(self):
         self._brightness = 0
