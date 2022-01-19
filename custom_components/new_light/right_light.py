@@ -38,7 +38,9 @@ class RightLight:
         sun = Sun(self._latitude, self._longitude)
 
         self.sunrise = sun.get_sunrise_time(date.today()).astimezone(self._timezoneobj)
-        self.sunset = sun.get_sunset_time(date.today()).astimezone(self._timezoneobj)
+        self.sunset  = sun.get_sunset_time(date.today()).astimezone(self._timezoneobj)
+        self.sunrise.replace(day=datetime.datetime.now().day)
+        self.sunset.replace(day=datetime.datetime.now().day)
 
         self.defineTripPoints()
 
@@ -61,6 +63,7 @@ class RightLight:
         next_time = self.trip_points['Normal'][next][0]
         time_ratio = (now - prev_time) / (next_time - prev_time)
 
+        self._logger.error(f"Now: {now}")
         self._logger.error(f"Prev/Next: {prev}, {next}, {prev_time}, {next_time}, {time_ratio}")
 
         # Compute br/ct for previous point
