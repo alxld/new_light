@@ -104,11 +104,12 @@ class RightLight:
         await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": self.on_transition})
 
         # Transition to next values
-        self._hass.loop.call_later(self.on_transition*1000 + 100, self._runTransition, br_next, ct_next, time_rem)
+        self._hass.loop.call_later(self.on_transition + 1, self._runTransition, br_next, ct_next, time_rem)
         #await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
+        self._hass.helpers.event.async_call_later(self._hass, (next_time - self.now), self._runTransition)
 
     def _runTransition(self, br, ct, time):
-        await self._hass.services.async_call("ligth", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": time})
+        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": time})
 
     async def disable_and_turn_off(self):
         self._brightness = 0
