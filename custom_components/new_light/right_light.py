@@ -17,6 +17,8 @@ class RightLight:
         self._entity = ent
         self._hass = hass
 
+        self._mode = "Off"
+
         self._logger = logging.getLogger(f"RightLight({self._entity})")
 
         self.trip_points = {}
@@ -54,77 +56,114 @@ class RightLight:
         #self._logger.error(f"Trip Points Normal: {self.trip_points['Normal']}")
         #self._logger.error(f"Trip Points Vivid: {self.trip_points['Vivid']}")
 
-    async def turn_on(self, brightness: int = 255, brightness_override: int = 0):
-        self._brightness = brightness
-        self._brightness_override = brightness_override
+    async def turn_on(self, **kwargs) -> None:
+        """
+        Turns on a RightLight-controlled entity
+
+        :key brightness: The master brightness control
+        :key brightness_override: Additional brightness to add on to RightLight's calculated brightness
+        :key mode: One of the trip_point key names (Normal, Vivid, Bright, One, Two)
+        """
+        # Cancel any pending eventloop schedules
+        if self._currSched != None:
+            self._currSched.cancel()
+
+        self.now = self._timezoneobj.localize( datetime.datetime.now() )
+
+        self._mode = kwargs.get("mode", "Normal")
+        self._brightness = kwargs.get("brightness", 255)
+        self._brightness_override = kwargs.get("brightness_override", 0)
+
 
         # Find trip points around current time
-        for next in range(0, len(self.trip_points['Normal'])):
-            if self.trip_points['Normal'][next][0] >= self.now:
+        for next in range(0, len(self.trip_points[self._mode])):
+            if self.trip_points[self._mode][next][0] >= self.now:
                 break
         prev = next - 1
 
         # Calculate how far through the trip point span we are now
-        prev_time = self.trip_points['Normal'][prev][0]
-        next_time = self.trip_points['Normal'][next][0]
+        prev_time = self.trip_points[self._mode][prev][0]
+        next_time = self.trip_points[self._mode][next][0]
         time_ratio = (self.now - prev_time) / (next_time - prev_time)
         time_rem = (next_time - self.now).seconds
 
         self._logger.error(f"Now: {self.now}")
         self._logger.error(f"Prev/Next: {prev}, {next}, {prev_time}, {next_time}, {time_ratio}")
 
-        # Compute br/ct for previous point
-        br_max_prev = self.trip_points['Normal'][prev][2] / 255
-        br_prev = br_max_prev * (self._brightness + self._brightness_override)
+        if self._mode == "Normal":
+            # Compute br/ct for previous point
+            br_max_prev = self.trip_points['Normal'][prev][2] / 255
+            br_prev = br_max_prev * (self._brightness + self._brightness_override)
 
-        ct_max_prev = self.trip_points['Normal'][prev][1]
-        ct_delta_prev = (self._ct_high - ct_max_prev) * (1 - br_max_prev) * self._ct_scalar
-        ct_prev = ct_max_prev - ct_delta_prev
+            ct_max_prev = self.trip_points['Normal'][prev][1]
+            ct_delta_prev = (self._ct_high - ct_max_prev) * (1 - br_max_prev) * self._ct_scalar
+            ct_prev = ct_max_prev - ct_delta_prev
 
-        # Compute br/ct for next point
-        br_max_next = self.trip_points['Normal'][next][2] / 255
-        br_next = br_max_next * (self._brightness + self._brightness_override)
+            # Compute br/ct for next point
+            br_max_next = self.trip_points['Normal'][next][2] / 255
+            br_next = br_max_next * (self._brightness + self._brightness_override)
 
-        ct_max_next = self.trip_points['Normal'][next][1]
-        ct_delta_next = (self._ct_high - ct_max_next) * (1 - br_max_next) * self._ct_scalar
-        ct_next = ct_max_next - ct_delta_next
+            ct_max_next = self.trip_points['Normal'][next][1]
+            ct_delta_next = (self._ct_high - ct_max_next) * (1 - br_max_next) * self._ct_scalar
+            ct_next = ct_max_next - ct_delta_next
 
-        self._logger.error(f"Prev/Next: {br_prev}/{ct_prev}, {br_next}/{ct_next}")
+            self._logger.error(f"Prev/Next: {br_prev}/{ct_prev}, {br_next}/{ct_next}")
 
-        # Scale linearly to current time
-        br = (br_next - br_prev) * time_ratio + br_prev
-        ct = (ct_next - ct_prev) * time_ratio + ct_prev
+            # Scale linearly to current time
+            br = (br_next - br_prev) * time_ratio + br_prev
+            ct = (ct_next - ct_prev) * time_ratio + ct_prev
 
-        if br > 255:
-            br = 255
+            if br > 255:
+                br = 255
 
-        self._logger.error(f"Final: {br}/{ct}")
+            self._logger.error(f"Final: {br}/{ct} -> {time_rem}sec")
 
-        self._mode = 'Normal'
-        #self._hass.states.async_set( self._entity, f"rlon: {br},{ct}" )
+            # Turn on light to interpolated values
+            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": self.on_transition})
 
-        # Turn on light to interpolated values
-        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": self.on_transition})
+            # Transition to next values
+            await asyncio.sleep(self.on_transition + 1)
+            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
 
-        # Transition to next values
-        await asyncio.sleep(self.on_transition + 1)
-        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
-        #self._hass.loop.call_later(self.on_transition + 1, self._runTransition, br_next, ct_next, time_rem)
-        #await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
-        #await self._hass.helpers.event.async_call_later(self._hass, (next_time - self.now), self._runTransition)
+            # Schedule another turn_on at next_time to start the next transition
+            ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on('brightness': self._brightness, 'brightness_override': self._brightness_override))
+            self._currSched = ret
 
-        # Schedule another turn_on a next_time to start the next transition
-        self._hass.loop.call_at(next_time, self.turn_on("brightness": br_next))
+        else:
+            prev_rgb = self.trip_points[self._mode][prev][1]
+            next_rgb = self.trip_points[self._mode][next][1]
 
-   #async def _runTransition(self, br, ct, time):
-   #     await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": time})
+            r_now = prev_rgb[0] + (next_rgb[0] - prev_rgb[0])*time_ratio
+            g_now = prev_rgb[1] + (next_rgb[1] - prev_rgb[1])*time_ratio
+            b_now = prev_rgb[2] + (next_rgb[2] - prev_rgb[2])*time_ratio
+
+            self._logger.error(f"Final: {r}/{g}/{b} -> {time_rem}sec")
+
+            # Turn on light to interpolated values
+            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "rgb_color": (r, g, b)})
+
+            # Transition to next values
+            await asyncio.sleep(self.on_transition + 1)
+            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "rgb_color": next_rgb})
+
+            # Schedule another turn on at next_time to start the next transition
+            ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on('mode': self._mode))
+            self._currSched = ret
 
     async def disable_and_turn_off(self):
+        # Cancel any pending eventloop schedules
+        if self._currSched != None:
+            self._currSched.cancel()
+
         self._brightness = 0
         #self._hass.states.async_set(self._entity, "off")
         await self._hass.services.async_call("light", "turn_off", {"entity_id": self._entity, "transition": self.off_transition})
 
     def disable(self):
+        # Cancel any pending eventloop schedules
+        if self._currSched != None:
+            self._currSched.cancel()
+
         pass
 
     def defineTripPoints(self):
