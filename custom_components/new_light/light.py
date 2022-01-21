@@ -110,7 +110,7 @@ class OfficeLight(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
         self._mode = Modes.NORMAL
-        await self._rightlight.turn_on("brightness": self._brightness, "brightness_override": self._brightness_override)
+        await self._rightlight.turn_on(brightness=self._brightness, brightness_override=self._brightness_override)
         self.hass.states.async_set("new_light.fake_office_light", f"on: {self._brightness}")
 
 #        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", f"{{\"brightness\": {self._brightness}, \"state\": \"on\"}}")
@@ -123,7 +123,7 @@ class OfficeLight(LightEntity):
 
     async def async_turn_on_mode(self, **kwargs: Any) -> None:
         self._mode = kwargs.get("mode", "Vivid")
-        await self._rightlight.turn_on("mode": self._mode)
+        await self._rightlight.turn_on(mode=self._mode)
         self.hass.states.async_set("new_light.fake_office_light", f"on: {self._mode}")
         self.async_write_ha_state()
 
@@ -176,7 +176,7 @@ class OfficeLight(LightEntity):
         if payload == "on-press":
             await self.async_turn_on()
         elif payload == "on-hold":
-            await self.async_turn_on_mode("mode": "Vivid")
+            await self.async_turn_on_mode(mode="Vivid")
         elif payload == "off-press":
             await self.async_turn_off()
         elif payload == "up-press":

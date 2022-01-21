@@ -126,7 +126,7 @@ class RightLight:
             await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
 
             # Schedule another turn_on at next_time to start the next transition
-            ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on('brightness': self._brightness, 'brightness_override': self._brightness_override))
+            ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on(brightness=self._brightness, brightness_override=self._brightness_override))
             self._currSched = ret
 
         else:
@@ -147,7 +147,7 @@ class RightLight:
             await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "rgb_color": next_rgb})
 
             # Schedule another turn on at next_time to start the next transition
-            ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on('mode': self._mode))
+            ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on(mode=self._mode))
             self._currSched = ret
 
     async def disable_and_turn_off(self):
