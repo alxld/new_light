@@ -133,14 +133,16 @@ class RightLight:
             prev_rgb = self.trip_points[self._mode][prev][1]
             next_rgb = self.trip_points[self._mode][next][1]
 
+            self._logger.error(f"Prev/Next: {prev_rgb}/{next_rgb}")
+
             r_now = prev_rgb[0] + (next_rgb[0] - prev_rgb[0])*time_ratio
             g_now = prev_rgb[1] + (next_rgb[1] - prev_rgb[1])*time_ratio
             b_now = prev_rgb[2] + (next_rgb[2] - prev_rgb[2])*time_ratio
 
-            self._logger.error(f"Final: {r}/{g}/{b} -> {time_rem}sec")
+            self._logger.error(f"Final: {r_now}/{g_now}/{b_now} -> {time_rem}sec")
 
             # Turn on light to interpolated values
-            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "rgb_color": (r, g, b)})
+            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "rgb_color": (r_now, g_now, b_now)})
 
             # Transition to next values
             await asyncio.sleep(self.on_transition + 1)
@@ -169,7 +171,7 @@ class RightLight:
     def defineTripPoints(self):
         self.trip_points["Normal"] = []
         midnight_early = self.now.replace(microsecond=0, second=0, minute=0, hour=0)
-        midnight_late  = self.now.replace(microsecond=0, second=59, minute=59, hour=11)
+        midnight_late  = self.now.replace(microsecond=0, second=59, minute=59, hour=23)
         timestep = timedelta(minutes=2)
 
         self.trip_points["Normal"].append( [midnight_early, 2500, 150] )  # Midnight morning
