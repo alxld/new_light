@@ -28,6 +28,9 @@ class RightLight:
         self.off_transition = 0.1
         self.dim_transition = 0.1
 
+        # Store callback for cancelling scheduled next event
+        self._currSched = None
+
         cd = self._hass.config.as_dict()
         self._latitude = cd["latitude"]
         self._longitude = cd["longitude"]
@@ -104,12 +107,17 @@ class RightLight:
         await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": self.on_transition})
 
         # Transition to next values
-        self._hass.loop.call_later(self.on_transition + 1, self._runTransition, br_next, ct_next, time_rem)
+        await asyncio.sleep(self.on_transition + 1)
+        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
+        #self._hass.loop.call_later(self.on_transition + 1, self._runTransition, br_next, ct_next, time_rem)
         #await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br_next, "kelvin": ct_next, "transition": time_rem})
-        self._hass.helpers.event.async_call_later(self._hass, (next_time - self.now), self._runTransition)
+        #await self._hass.helpers.event.async_call_later(self._hass, (next_time - self.now), self._runTransition)
 
-    def _runTransition(self, br, ct, time):
-        await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": time})
+        # Schedule another turn_on a next_time to start the next transition
+        self._hass.loop.call_at(next_time, self.turn_on("brightness": br_next))
+
+   #async def _runTransition(self, br, ct, time):
+   #     await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": time})
 
     async def disable_and_turn_off(self):
         self._brightness = 0
