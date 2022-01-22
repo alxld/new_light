@@ -89,14 +89,19 @@ class OfficeLight(LightEntity):
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
 
-        temp = self.hass.states.get(harmony_entity)
-        _LOGGER.error(f"Harmony state: {temp}")
-        await event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
+        #temp = self.hass.states.get(harmony_entity).new_state
+        #_LOGGER.error(f"Harmony state: {temp}")
+        event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
 
     @callback
     async def harmony_update(self, this_event):
         """Track harmony updates"""
-        _LOGGER.error(f"Harmony Update: {this_event}")
+        ev = this_event.as_dict()
+        ns = ev["data"]["new_state"]
+        if ns.contains("=on"):
+            self.harmony_on = True
+        else:
+            self.harmony_on = False
 
     @property
     def should_poll(self):
@@ -197,12 +202,14 @@ class OfficeLight(LightEntity):
         """A new MQTT message has been received."""
         self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
 
+        self.switched_on = True
         if payload == "on-press":
             await self.async_turn_on()
         elif payload == "on-hold":
             await self.async_turn_on_mode(mode="Vivid")
         elif payload == "off-press":
             await self.async_turn_off()
+            self.switched_on = False
         elif payload == "up-press":
             await self.up_brightness()
         elif payload == "up-hold":
