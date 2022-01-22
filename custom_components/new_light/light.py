@@ -89,12 +89,14 @@ class OfficeLight(LightEntity):
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
 
-        await event.async_track_state_change_event(self._hass, harmony_entity, self.harmony_update)
+        temp = self.hass.states.get(harmony_entity).as_dict()
+        _LOGGER.error(f"Harmony state: {temp}")
+        await event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
 
     @callback
     async def harmony_update(self, this_event):
         """Track harmony updates"""
-        self._logger.error(f"Harmony Update: {this_event}")
+        _LOGGER.error(f"Harmony Update: {this_event}")
 
     @property
     def should_poll(self):
