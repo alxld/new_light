@@ -6,10 +6,6 @@ from suntime import Sun
 from datetime import date, timedelta
 import datetime, asyncio
 
-#TODO: Implement colors and other modes
-#TODO: Transition to next trip point
-#TODO: Schedule update at next trip point (hass.loop.call_later(hass, time_delta|float, HASS_JOB|CALLABLE))
-
 class RightLight:
     """RightLight object to control a single light or light group"""
 
@@ -33,7 +29,7 @@ class RightLight:
         self.dim_transition = 0.1
 
         # Store callback for cancelling scheduled next event
-        self._currSched = None
+        self._currSched = []
 
         cd = self._hass.config.as_dict()
         self.sun = Sun(cd["latitude"], cd["longitude"])
@@ -109,7 +105,7 @@ class RightLight:
 
             # Schedule another turn_on at next_time to start the next transition
             ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on(brightness=self._brightness, brightness_override=self._brightness_override))
-            self._currSched = ret
+            self._addSched(ret)
 
         else:
             prev_rgb = self.trip_points[self._mode][prev][1]
@@ -132,7 +128,7 @@ class RightLight:
 
             # Schedule another turn on at next_time to start the next transition
             ret = self._hass.loop.call_later((next_time - self.now).seconds, asyncio.create_task, self.turn_on(mode=self._mode))
-            self._currSched = ret
+            self._addSched(ret)
 
     async def disable_and_turn_off(self):
         # Cancel any pending eventloop schedules
@@ -146,10 +142,14 @@ class RightLight:
         self._cancelSched()
 
     def _cancelSched(self):
-        if self._currSched != None:
-            self._currSched.cancel()
+        for ret in self._currSched:
+            ret.cancel()
 
-        self._currSched = None
+    def _addSched(self, ret):
+        # FIFO of event callbacks to ensure all are properly cancelled
+        if len(self._currSched) >= 3:
+            self._currSched.pop(0)
+        self._currSched.append(ret)
 
     def _getNow(self):
         self.now = dt.now()

@@ -22,8 +22,7 @@ brightness_step = 32
 harmony_entity = "remote.theater_harmony_hub"
 
 # TODO: Poll state of light on startup to set object initial state
-# TODO: Add 'brightness_override' parameter to increase beyond default right_light settings - Done
-# TODO: Add more detail to state object.  Harmony state, switched state, light state, brightness, brightness_override
+# TODO: Move light name to globals
 
 async def async_setup_platform(
     hass: HomeAssistant,
@@ -35,26 +34,26 @@ async def async_setup_platform(
     # We only want this platform to be set up via discovery.
     if discovery_info is None:
         return
-    hass.states.async_set("new_light.fake_office_light", "Setup")
+    #hass.states.async_set(f"light.{self._name}", "Setup")
     ent = OfficeLight()
     add_entities([ent])
 
     @callback
     async def switch_message_received(topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        hass.states.async_set("new_light.fake_office_light", payload)
+        #hass.states.async_set(f"light.{self._name}", payload)
         await ent.switch_message_received(topic, payload, qos)
 
     @callback
     async def motion_sensor_message_received(topic: str, payload: str, qos: int) -> None:
         """A new motion sensor MQTT message has been received"""
-        hass.states.async_set("new_light.fake_office_light", payload)
+        #hass.states.async_set(f"light.{self._name}", payload)
         await ent.motion_sensor_message_received(topic, json.loads(payload), qos)
 
     await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Office Switch/action", switch_message_received )
     await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Theater Motion Sensor", motion_sensor_message_received )
 
-    hass.states.async_set("new_light.fake_office_light", f"Subscribed")
+    #hass.states.async_set(f"light.{self._name}", f"Subscribed")
 
 
 class Modes(Enum):
@@ -70,11 +69,11 @@ class OfficeLight(LightEntity):
     def __init__(self) -> None:
         """Initialize Office Light."""
         self._light = light_entity
-        self._name = "FakeOfficeLight"
+        self._name = "Office"
         self._state = None
         self._brightness = None
         self._brightness_override = 0
-        self._mode = Modes.NORMAL
+        self._mode = "Off"
 
         # Record whether a switch was used to turn on this light
         self.switched_on = False
@@ -82,7 +81,7 @@ class OfficeLight(LightEntity):
         # Track if the Theater Harmony is on
         self.harmony_on = False
 
-        # self.hass.states.async_set("new_light.fake_office_light", "Initialized")
+        # self.hass.states.async_set(f"light.{self._name}", "Initialized")
         _LOGGER.info("OfficeLight initialized")
 
     async def async_added_to_hass(self) -> None:
@@ -103,8 +102,8 @@ class OfficeLight(LightEntity):
         else:
             self.harmony_on = False
 
-    def _updateState(self, st):
-        self.hass.states.async_set("new_light.fake_office_light", st, {"brightness": self._brightness, "brightness_override": self._brightness_override, "switched_on": self.switched_on, "harmony_on": self.harmony_on})
+    def _updateState(self, comment = ""):
+        self.hass.states.async_set(f"light.{self._name}", self._state, {"brightness": self._brightness, "brightness_override": self._brightness_override, "switched_on": self.switched_on, "harmony_on": self.harmony_on, "mode": self._mode, "comment": comment})
 
     @property
     def should_poll(self):
@@ -136,9 +135,9 @@ class OfficeLight(LightEntity):
         """
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = "on"
-        self._mode = Modes.NORMAL
+        self._mode = "On"
         await self._rightlight.turn_on(brightness=self._brightness, brightness_override=self._brightness_override)
-        self._updateState("on")
+        self._updateState()
 
 #        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", f"{{\"brightness\": {self._brightness}, \"state\": \"on\"}}")
 #        await self.hass.services.async_call(
@@ -150,9 +149,9 @@ class OfficeLight(LightEntity):
 
     async def async_turn_on_mode(self, **kwargs: Any) -> None:
         self._mode = kwargs.get("mode", "Vivid")
+        self._state = "on"
         await self._rightlight.turn_on(mode=self._mode)
-        #self.hass.states.async_set("new_light.fake_office_light", f"on: {self._mode}")
-        self._updateState(f"on: {self._mode}")
+        self._updateState()
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -161,8 +160,7 @@ class OfficeLight(LightEntity):
         self._brightness_override = 0
         self._state = "off"
         await self._rightlight.disable_and_turn_off()
-        self._updateState("off")
-        #self.hass.states.async_set("new_light.fake_office_light", "off")
+        self._updateState()
 
 #        # await self.hass.components.mqtt.async_publish(self.hass, "zigbee2mqtt/Office/set", "OFF"})
 #        await self.hass.services.async_call(
@@ -205,7 +203,8 @@ class OfficeLight(LightEntity):
 
     async def switch_message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
+        #self.hass.states.async_set(f"light.{self._name}", f"ENT: {payload}")
+        self._updateState(f"{payload}")
 
         self.switched_on = True
         if payload == "on-press":
@@ -213,8 +212,8 @@ class OfficeLight(LightEntity):
         elif payload == "on-hold":
             await self.async_turn_on_mode(mode="Vivid")
         elif payload == "off-press":
-            await self.async_turn_off()
             self.switched_on = False
+            await self.async_turn_off()
         elif payload == "up-press":
             await self.up_brightness()
         elif payload == "up-hold":
@@ -222,12 +221,12 @@ class OfficeLight(LightEntity):
         elif payload == "down-press":
             await self.down_brightness()
         else:
-            self.hass.states.async_set("new_light.fake_office_light", f"ENT Fail: {payload}")
+            self._updateState(f"Fail: {payload}")
 
     async def motion_sensor_message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
         occ = payload["occupancy"]
-        self.hass.states.async_set("new_light.fake_office_light", f"ENT: {occ}")
+        self._updateState(f"OCC: {occ}")
 
         # Disable motion sensor tracking if the lights are switched on or the harmony is on
         if self.switched_on or self.harmony_on:
