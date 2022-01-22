@@ -36,12 +36,7 @@ class RightLight:
         self._currSched = None
 
         cd = self._hass.config.as_dict()
-
-        self._logger.error(
-            f"Initialized.  Lat/Long: {self._latitude}, {self._longitude}"
-        )
-
-        sun = Sun(cd["latitude"], cd["longitude"])
+        self.sun = Sun(cd["latitude"], cd["longitude"])
 
         self._getNow()
 
@@ -162,8 +157,8 @@ class RightLight:
         self.today = date.today()
 
         if rerun:
-            self.sunrise = dt.as_local( sun.get_sunrise_time() )
-            self.sunset  = dt.as_local( sun.get_sunset_time()  )
+            self.sunrise = dt.as_local( self.sun.get_sunrise_time() )
+            self.sunset  = dt.as_local( self.sun.get_sunset_time()  )
             self.sunrise = self.sunrise.replace(day=self.now.day)
             self.sunset = self.sunset.replace(day=self.now.day)
             self.midnight_early = self.now.replace(microsecond=0, second=0, minute=0, hour=0)
