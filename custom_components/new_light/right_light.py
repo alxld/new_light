@@ -1,6 +1,7 @@
 from homeassistant.helpers import entity
 from homeassistant.core import HomeAssistant
-import logging, pytz
+from homeassistant.util import dt, location
+import logging
 from suntime import Sun, SunTimeException
 from datetime import date, timedelta
 import datetime, asyncio
@@ -18,6 +19,7 @@ class RightLight:
         self._hass = hass
 
         self._mode = "Off"
+        self.today = None
 
         self._logger = logging.getLogger(f"RightLight({self._entity})")
 
@@ -33,28 +35,9 @@ class RightLight:
         # Store callback for cancelling scheduled next event
         self._currSched = None
 
-        cd = self._hass.config.as_dict()
-        self._latitude = cd["latitude"]
-        self._longitude = cd["longitude"]
-        self._timezone = cd["time_zone"]
-        self._timezoneobj = pytz.timezone(self._timezone)
+        sun = Sun(location.LocationInfo('latitude'), location.LocationInfo('longitude'))
 
-        self._logger.error(
-            f"Initialized.  Lat/Long: {self._latitude}, {self._longitude}"
-        )
-
-        sun = Sun(self._latitude, self._longitude)
-
-        self.now = self._timezoneobj.localize( datetime.datetime.now() )
-        self.sunrise = sun.get_sunrise_time(date.today()).astimezone(self._timezoneobj)
-        self.sunset  = sun.get_sunset_time(date.today()).astimezone(self._timezoneobj)
-        self.sunrise = self.sunrise.replace(day=self.now.day)
-        self.sunset = self.sunset.replace(day=self.now.day)
-
-        self.defineTripPoints()
-
-        #self._logger.error(f"Trip Points Normal: {self.trip_points['Normal']}")
-        #self._logger.error(f"Trip Points Vivid: {self.trip_points['Vivid']}")
+        self._getNow()
 
     async def turn_on(self, **kwargs) -> None:
         """
@@ -65,15 +48,13 @@ class RightLight:
         :key mode: One of the trip_point key names (Normal, Vivid, Bright, One, Two)
         """
         # Cancel any pending eventloop schedules
-        if self._currSched != None:
-            self._currSched.cancel()
+        self._cancelSched()
 
-        self.now = self._timezoneobj.localize( datetime.datetime.now() )
+        self._getNow()
 
         self._mode = kwargs.get("mode", "Normal")
         self._brightness = kwargs.get("brightness", 255)
         self._brightness_override = kwargs.get("brightness_override", 0)
-
 
         # Find trip points around current time
         for next in range(0, len(self.trip_points[self._mode])):
@@ -119,7 +100,7 @@ class RightLight:
             self._logger.error(f"Final: {br}/{ct} -> {time_rem}sec")
 
             # Turn on light to interpolated values
-            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": 0})
+            await self._hass.services.async_call("light", "turn_on", {"entity_id": self._entity, "brightness": br, "kelvin": ct, "transition": 0.1})
 
             # Transition to next values
             await asyncio.sleep(self.on_transition + 1)
@@ -154,27 +135,41 @@ class RightLight:
 
     async def disable_and_turn_off(self):
         # Cancel any pending eventloop schedules
-        if self._currSched != None:
-            self._currSched.cancel()
+        self._cancelSched()
 
         self._brightness = 0
-        #self._hass.states.async_set(self._entity, "off")
         await self._hass.services.async_call("light", "turn_off", {"entity_id": self._entity, "transition": self.off_transition})
 
     def disable(self):
         # Cancel any pending eventloop schedules
+        self._cancelSched()
+
+    def _cancelSched(self):
         if self._currSched != None:
             self._currSched.cancel()
 
-        pass
+        self._currSched = None
+
+    def _getNow(self):
+        self.now = dt.now()
+        rerun = (date.today() != self.today)
+        self.today = date.today()
+
+        if rerun:
+            self.sunrise = dt.as_local( sun.get_sunrise_time() )
+            self.sunset  = dt.as_local( sun.get_sunset_time()  )
+            self.sunrise = self.sunrise.replace(day=self.now.day)
+            self.sunset = self.sunset.replace(day=self.now.day)
+            self.midnight_early = self.now.replace(microsecond=0, second=0, minute=0, hour=0)
+            self.midnight_late  = self.now.replace(microsecond=0, second=59, minute=59, hour=23)
+
+            self.defineTripPoints()
 
     def defineTripPoints(self):
         self.trip_points["Normal"] = []
-        midnight_early = self.now.replace(microsecond=0, second=0, minute=0, hour=0)
-        midnight_late  = self.now.replace(microsecond=0, second=59, minute=59, hour=23)
         timestep = timedelta(minutes=2)
 
-        self.trip_points["Normal"].append( [midnight_early, 2500, 150] )  # Midnight morning
+        self.trip_points["Normal"].append( [self.midnight_early, 2500, 150] )  # Midnight morning
         self.trip_points["Normal"].append( [self.sunrise - timedelta(minutes=60), 2500, 120] )  # Sunrise - 60
         self.trip_points["Normal"].append( [self.sunrise - timedelta(minutes=30), 2700, 170] )  # Sunrise - 30
         self.trip_points["Normal"].append( [self.sunrise, 3200, 155] )  # Sunrise
@@ -183,7 +178,7 @@ class RightLight:
         self.trip_points["Normal"].append( [self.sunset - timedelta(minutes=30), 3200, 255] )   # Sunset = 30
         self.trip_points["Normal"].append( [self.sunset, 2700, 255]) # Sunset
         self.trip_points["Normal"].append( [self.now.replace(microsecond=0, second=0, minute=30, hour=22), 2500, 255]) # 10:30
-        self.trip_points["Normal"].append( [midnight_late, 2500, 150]) # Midnight night
+        self.trip_points["Normal"].append( [self.midnight_late, 2500, 150]) # Midnight night
 
         vivid_trip_points = [
             [255,   0,   0],
@@ -220,10 +215,10 @@ class RightLight:
         ]
 
         # Loop to create vivid trip points
-        temp = midnight_early
+        temp = self.midnight_early
         this_ptr = 0
         self.trip_points['Vivid'] = []
-        while temp < midnight_late:
+        while temp < self.midnight_late:
             self.trip_points['Vivid'].append( [ temp, vivid_trip_points[this_ptr] ] )
 
             temp = temp + timestep
@@ -233,10 +228,10 @@ class RightLight:
                 this_ptr = 0
 
         # Loop to create bright trip points
-        temp = midnight_early
+        temp = self.midnight_early
         this_ptr = 0
         self.trip_points['Bright'] = []
-        while temp < midnight_late:
+        while temp < self.midnight_late:
             self.trip_points['Bright'].append( [ temp, bright_trip_points[this_ptr] ] )
 
             temp = temp + timestep
@@ -246,10 +241,10 @@ class RightLight:
                 this_ptr = 0
 
         # Loop to create 'one' trip points
-        temp = midnight_early
+        temp = self.midnight_early
         this_ptr = 0
         self.trip_points['One'] = []
-        while temp < midnight_late:
+        while temp < self.midnight_late:
             self.trip_points['One'].append( [ temp, one_trip_points[this_ptr] ] )
 
             temp = temp + timestep
@@ -259,10 +254,10 @@ class RightLight:
                 this_ptr = 0
 
         # Loop to create 'two' trip points
-        temp = midnight_early
+        temp = self.midnight_early
         this_ptr = 0
         self.trip_points['Two'] = []
-        while temp < midnight_late:
+        while temp < self.midnight_late:
             self.trip_points['Two'].append( [ temp, two_trip_points[this_ptr] ] )
 
             temp = temp + timestep
