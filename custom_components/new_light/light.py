@@ -89,7 +89,7 @@ class OfficeLight(LightEntity):
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
 
-        temp = self.hass.states.get(harmony_entity).as_dict()
+        temp = self.hass.states.get(harmony_entity)
         _LOGGER.error(f"Harmony state: {temp}")
         await event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
 
@@ -214,13 +214,14 @@ class OfficeLight(LightEntity):
 
     async def motion_sensor_message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload.occupancy}")
+        occ = payload["occupancy"]
+        self.hass.states.async_set("new_light.fake_office_light", f"ENT: {occ}")
 
         # Disable motion sensor tracking if the lights are switched on or the harmony is on
         if self.switched_on or self.harmony_on:
             return
 
-        if payload.occupancy == "true":
+        if occ == "true":
             await self.async_turn_on()
-        elif payload.occupancy == "false":
+        elif occ == "false":
             await self.async_turn_off()
