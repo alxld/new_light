@@ -10,7 +10,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers import event
 from .right_light import RightLight
 
-# from homeassistant.components import mqtt
+#TODO: Return supported features
 
 from . import DOMAIN
 
@@ -82,11 +82,10 @@ class OfficeLight(LightEntity):
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
 
-        temp = self.hass.states.get(self._light)
-        _LOGGER.error(f"Light state: {temp}")
         #temp = self.hass.states.get(harmony_entity).new_state
         #_LOGGER.error(f"Harmony state: {temp}")
         event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
+        event.async_track_state_change_event(self.hass, self._light, self.light_update)
 
     @callback
     async def harmony_update(self, this_event):
@@ -97,6 +96,12 @@ class OfficeLight(LightEntity):
             self.harmony_on = True
         else:
             self.harmony_on = False
+
+    @callback
+    async def light_update(self, this_event):
+        """Get initial light state"""
+        if self._state == None:
+            _LOGGER.error(f"Light update: {this_event}")
 
     def _updateState(self, comment = ""):
         self.hass.states.async_set(f"light.{self._name}", self._state, {"brightness": self._brightness, "brightness_override": self._brightness_override, "switched_on": self.switched_on, "harmony_on": self.harmony_on, "mode": self._mode, "comment": comment})
