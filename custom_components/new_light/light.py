@@ -17,12 +17,9 @@ _LOGGER = logging.getLogger(__name__)
 
 light_group = "light.office_group"
 light_group = "light.theater_bay_light_n"
-brightness_step = 25
+brightness_step = 32
 
-# TODO: Up/Down hold transitions - dropped
 # TODO: Poll state of light on startup to set object initial state
-# TODO: Parameterize transition times (up, down, hold)
-# TODO: Add scenes to hold events from buttons
 # TODO: Add 'brightness_override' parameter to increase beyond default right_light settings
 
 
@@ -41,14 +38,19 @@ async def async_setup_platform(
     add_entities([ent])
 
     @callback
-    async def message_received(topic: str, payload: str, qos: int) -> None:
+    async def switch_message_received(topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
         hass.states.async_set("new_light.fake_office_light", payload)
-        await ent.message_received(topic, payload, qos)
+        await ent.switch_message_received(topic, payload, qos)
 
-    await hass.components.mqtt.async_subscribe(
-        "zigbee2mqtt/Office Switch/action", message_received
-    )
+    @callback
+    async def motion_sensor_message_received(topic: str, payload: str, qos: int) -> None:
+        """A new motion sensor MQTT message has been received"""
+        hass.states.async_set("new_light.fake_office_light", payload)
+        await ent.motion_sensor_message_received(topic, payload, qos)
+
+    await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Office Switch/action", switch_message_received )
+    await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Theater Motion Sensor", motion_sensor_message_received )
 
     hass.states.async_set("new_light.fake_office_light", f"Subscribed")
 
@@ -130,6 +132,7 @@ class OfficeLight(LightEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
+        self._brightness_override = 0
         self._state = "off"
         await self._rightlight.disable_and_turn_off()
         self.hass.states.async_set("new_light.fake_office_light", "off")
@@ -146,6 +149,7 @@ class OfficeLight(LightEntity):
             self._brightness = brightness_step
         elif self._brightness > (255 - brightness_step):
             self._brightness = 255
+            self._brightness_override = self._brightness_override + brightness_step
         else:
             self._brightness = self._brightness + brightness_step
 
@@ -155,6 +159,9 @@ class OfficeLight(LightEntity):
         """Decrease brightness by one step"""
         if self._brightness == None:
             await self.async_turn_off()
+        elif self._brightness_override > 0:
+            self._brightness_override = 0
+            await self.async_turn_on(brightness=self._brightness)
         elif self._brightness < brightness_step:
             await self.async_turn_off()
         else:
@@ -169,7 +176,7 @@ class OfficeLight(LightEntity):
         # self._state = self._light.is_on()
         # self._brightness = self._light.brightness
 
-    async def message_received(self, topic: str, payload: str, qos: int) -> None:
+    async def switch_message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
         self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
 
@@ -181,7 +188,18 @@ class OfficeLight(LightEntity):
             await self.async_turn_off()
         elif payload == "up-press":
             await self.up_brightness()
+        elif payload == "up-hold":
+            await self.async_turn_on_mode(mode="Bright")
         elif payload == "down-press":
             await self.down_brightness()
         else:
             self.hass.states.async_set("new_light.fake_office_light", f"ENT Fail: {payload}")
+
+    async def motion_sensor_message_received(self, topic: str, payload: str, qos: int) -> None:
+        """A new MQTT message has been received."""
+        self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
+
+        if payload.occupancy == "true":
+            await self.async_turn_on()
+        elif payload.occupancy == "false":
+            await self.async_turn_off()
