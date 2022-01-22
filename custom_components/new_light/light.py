@@ -22,7 +22,6 @@ brightness_step = 32
 harmony_entity = "remote.theater_harmony_hub"
 
 # TODO: Poll state of light on startup to set object initial state
-# TODO: Move light name to globals
 
 async def async_setup_platform(
     hass: HomeAssistant,
@@ -34,26 +33,21 @@ async def async_setup_platform(
     # We only want this platform to be set up via discovery.
     if discovery_info is None:
         return
-    #hass.states.async_set(f"light.{self._name}", "Setup")
     ent = OfficeLight()
     add_entities([ent])
 
     @callback
     async def switch_message_received(topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        #hass.states.async_set(f"light.{self._name}", payload)
         await ent.switch_message_received(topic, payload, qos)
 
     @callback
     async def motion_sensor_message_received(topic: str, payload: str, qos: int) -> None:
         """A new motion sensor MQTT message has been received"""
-        #hass.states.async_set(f"light.{self._name}", payload)
         await ent.motion_sensor_message_received(topic, json.loads(payload), qos)
 
     await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Office Switch/action", switch_message_received )
     await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Theater Motion Sensor", motion_sensor_message_received )
-
-    #hass.states.async_set(f"light.{self._name}", f"Subscribed")
 
 
 class Modes(Enum):
@@ -88,6 +82,8 @@ class OfficeLight(LightEntity):
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
 
+        temp = self.hass.states.get(self._light)
+        _LOGGER.error(f"Light state: {temp}")
         #temp = self.hass.states.get(harmony_entity).new_state
         #_LOGGER.error(f"Harmony state: {temp}")
         event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
