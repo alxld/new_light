@@ -1,12 +1,13 @@
 """Platform for light integration"""
 from __future__ import annotations
-import logging
+import logging, json
 from enum import Enum
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.light import ATTR_BRIGHTNESS, LightEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers import event
 from .right_light import RightLight
 
 # from homeassistant.components import mqtt
@@ -15,9 +16,10 @@ from . import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-light_group = "light.office_group"
-light_group = "light.theater_bay_light_n"
+light_entity = "light.office_group"
+light_entity = "light.theater_bay_light_n"
 brightness_step = 32
+harmony_entity = "remote.theater_harmony_hub"
 
 # TODO: Poll state of light on startup to set object initial state
 # TODO: Add 'brightness_override' parameter to increase beyond default right_light settings
@@ -47,7 +49,7 @@ async def async_setup_platform(
     async def motion_sensor_message_received(topic: str, payload: str, qos: int) -> None:
         """A new motion sensor MQTT message has been received"""
         hass.states.async_set("new_light.fake_office_light", payload)
-        await ent.motion_sensor_message_received(topic, payload, qos)
+        await ent.motion_sensor_message_received(topic, json.loads(payload), qos)
 
     await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Office Switch/action", switch_message_received )
     await hass.components.mqtt.async_subscribe( "zigbee2mqtt/Theater Motion Sensor", motion_sensor_message_received )
@@ -67,12 +69,18 @@ class OfficeLight(LightEntity):
 
     def __init__(self) -> None:
         """Initialize Office Light."""
-        self._light = light_group
+        self._light = light_entity
         self._name = "FakeOfficeLight"
         self._state = None
         self._brightness = None
         self._brightness_override = 0
         self._mode = Modes.NORMAL
+
+        # Record whether a switch was used to turn on this light
+        self.switched_on = False
+
+        # Track if the Theater Harmony is on
+        self.harmony_on = False
 
         # self.hass.states.async_set("new_light.fake_office_light", "Initialized")
         _LOGGER.info("OfficeLight initialized")
@@ -80,6 +88,13 @@ class OfficeLight(LightEntity):
     async def async_added_to_hass(self) -> None:
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
+
+        await event.async_track_state_change_event(self._hass, harmony_entity, self.harmony_update)
+
+    @callback
+    async def harmony_update(self, this_event):
+        """Track harmony updates"""
+        self._logger.error(f"Harmony Update: {this_event}")
 
     @property
     def should_poll(self):
@@ -197,7 +212,11 @@ class OfficeLight(LightEntity):
 
     async def motion_sensor_message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload}")
+        self.hass.states.async_set("new_light.fake_office_light", f"ENT: {payload.occupancy}")
+
+        # Disable motion sensor tracking if the lights are switched on or the harmony is on
+        if self.switched_on or self.harmony_on:
+            return
 
         if payload.occupancy == "true":
             await self.async_turn_on()
