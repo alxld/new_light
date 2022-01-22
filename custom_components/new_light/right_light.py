@@ -1,8 +1,8 @@
 from homeassistant.helpers import entity
 from homeassistant.core import HomeAssistant
-from homeassistant.util import dt, location
+from homeassistant.util import dt
 import logging
-from suntime import Sun, SunTimeException
+from suntime import Sun
 from datetime import date, timedelta
 import datetime, asyncio
 
@@ -35,7 +35,13 @@ class RightLight:
         # Store callback for cancelling scheduled next event
         self._currSched = None
 
-        sun = Sun(location.LocationInfo('latitude'), location.LocationInfo('longitude'))
+        cd = self._hass.config.as_dict()
+
+        self._logger.error(
+            f"Initialized.  Lat/Long: {self._latitude}, {self._longitude}"
+        )
+
+        sun = Sun(cd["latitude"], cd["longitude"])
 
         self._getNow()
 
