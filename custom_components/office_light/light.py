@@ -17,9 +17,7 @@ from . import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 light_entity = "light.office_group"
-light_entity = "light.theater_bay_light_n"
 brightness_step = 32
-harmony_entity = "remote.theater_harmony_hub"
 
 async def async_setup_platform(
     hass: HomeAssistant,
@@ -70,8 +68,8 @@ class OfficeLight(LightEntity):
         # Record whether a switch was used to turn on this light
         self.switched_on = False
 
-        # Track if the Theater Harmony is on
-        self.harmony_on = False
+#        # Track if the Theater Harmony is on
+#        self.harmony_on = False
 
         # self.hass.states.async_set(f"light.{self._name}", "Initialized")
         _LOGGER.info("OfficeLight initialized")
@@ -80,22 +78,22 @@ class OfficeLight(LightEntity):
         """Instantiate RightLight"""
         self._rightlight = RightLight(self._light, self.hass)
 
-        #temp = self.hass.states.get(harmony_entity).new_state
-        #_LOGGER.error(f"Harmony state: {temp}")
-        event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
+#        #temp = self.hass.states.get(harmony_entity).new_state
+#        #_LOGGER.error(f"Harmony state: {temp}")
+#        event.async_track_state_change_event(self.hass, harmony_entity, self.harmony_update)
 
         # Not working.  Light starts up an sends None=>Off, Off=>Off, Off=>On, but not sure if that's always the case
         #event.async_track_state_change_event(self.hass, self._light, self.light_update)
 
-    @callback
-    async def harmony_update(self, this_event):
-        """Track harmony updates"""
-        ev = this_event.as_dict()
-        ns = ev["data"]["new_state"].state
-        if ns == "on":
-            self.harmony_on = True
-        else:
-            self.harmony_on = False
+#    @callback
+#    async def harmony_update(self, this_event):
+#        """Track harmony updates"""
+#        ev = this_event.as_dict()
+#        ns = ev["data"]["new_state"].state
+#        if ns == "on":
+#            self.harmony_on = True
+#        else:
+#            self.harmony_on = False
 
     @callback
     async def light_update(self, this_event):
@@ -105,7 +103,8 @@ class OfficeLight(LightEntity):
             _LOGGER.error(f"Light update: {this_event}")
 
     def _updateState(self, comment = ""):
-        self.hass.states.async_set(f"light.{self._name}", self._state, {"brightness": self._brightness, "brightness_override": self._brightness_override, "switched_on": self.switched_on, "harmony_on": self.harmony_on, "mode": self._mode, "comment": comment})
+#        self.hass.states.async_set(f"light.{self._name}", self._state, {"brightness": self._brightness, "brightness_override": self._brightness_override, "switched_on": self.switched_on, "harmony_on": self.harmony_on, "mode": self._mode, "comment": comment})
+        self.hass.states.async_set(f"light.{self._name}", self._state, {"brightness": self._brightness, "brightness_override": self._brightness_override, "switched_on": self.switched_on, "mode": self._mode, "comment": comment})
 
     @property
     def should_poll(self):
@@ -229,16 +228,16 @@ class OfficeLight(LightEntity):
         else:
             self._updateState(f"Fail: {payload}")
 
-    async def motion_sensor_message_received(self, topic: str, payload: str, qos: int) -> None:
-        """A new MQTT message has been received."""
-        occ = payload["occupancy"]
-        self._updateState(f"OCC: {occ}")
-
-        # Disable motion sensor tracking if the lights are switched on or the harmony is on
-        if self.switched_on or self.harmony_on:
-            return
-
-        if occ == "true":
-            await self.async_turn_on()
-        elif occ == "false":
-            await self.async_turn_off()
+#    async def motion_sensor_message_received(self, topic: str, payload: str, qos: int) -> None:
+#        """A new MQTT message has been received."""
+#        occ = payload["occupancy"]
+#        self._updateState(f"OCC: {occ}")
+#
+#        # Disable motion sensor tracking if the lights are switched on or the harmony is on
+#        if self.switched_on or self.harmony_on:
+#            return
+#
+#        if occ == "true":
+#            await self.async_turn_on()
+#        elif occ == "false":
+#            await self.async_turn_off()
