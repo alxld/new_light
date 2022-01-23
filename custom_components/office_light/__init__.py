@@ -1,10 +1,10 @@
-"""The new_light integration."""
+"""The new office_light integration."""
 from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-DOMAIN = "new_light"
+DOMAIN = "office_light"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

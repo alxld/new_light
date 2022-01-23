@@ -1,3 +1,3 @@
-"""Constants for the new_light integration."""
+"""Constants for the office_light integration."""
 
-DOMAIN = "new_light"
+DOMAIN = "office_light"
