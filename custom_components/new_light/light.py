@@ -42,20 +42,20 @@ from . import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-# Helper function in new_light to be called from async_setup_platform in instance light.py scripts
-async def new_light_async_setup_platform(
-    ent: new_light,
-    hass: HomeAssistant,
-    config: ConfigType,
-    add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """Set up the light platform."""
-    # We only want this platform to be set up via discovery.
-    if discovery_info is None:
-        return
-
-    add_entities([ent])
+## Helper function in new_light to be called from async_setup_platform in instance light.py scripts
+#async def new_light_async_setup_platform(
+#    ent: new_light,
+#    hass: HomeAssistant,
+#    config: ConfigType,
+#    add_entities: AddEntitiesCallback,
+#    discovery_info: DiscoveryInfoType | None = None,
+#) -> None:
+#    """Set up the light platform."""
+#    # We only want this platform to be set up via discovery.
+#    if discovery_info is None:
+#        return
+#
+#    add_entities([ent])
 
 
 class NewLight(LightEntity):

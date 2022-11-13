@@ -1,4 +1,4 @@
-"""The new_light super call."""
+"""The new_light super class."""
 # from __future__ import annotations
 
 # from homeassistant.core import HomeAssistant
