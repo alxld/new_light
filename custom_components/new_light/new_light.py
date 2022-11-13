@@ -38,9 +38,8 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 sys.path.append("custom_components/right_light")
 from right_light import RightLight
 
-from . import DOMAIN
-
 _LOGGER = logging.getLogger(__name__)
+
 
 class NewLight(LightEntity):
     """New Light Super Class"""
@@ -194,7 +193,7 @@ class NewLight(LightEntity):
         prop = {
             "identifiers": {
                 # Serial numbers are unique identifiers within a specific domain
-                (DOMAIN, self.unique_id)
+                (self._name, self.unique_id)
             },
             "name": self._name,
             "manufacturer": "Aaron",
@@ -308,7 +307,9 @@ class NewLight(LightEntity):
             # Use for other modes, like specific color or temperatures
             await self.entities[f].turn_on_specific(data)
 
-        if self.has_brightness_threshold and (self._brightness > self.brightness_threshold):
+        if self.has_brightness_threshold and (
+            self._brightness > self.brightness_threshold
+        ):
             # Process second entity if over brightness threshold
             if rl:
                 # Turn on second entity using RightLight
@@ -445,7 +446,7 @@ class NewLight(LightEntity):
                     self._buttonCounts[key] = 0
 
             for command in this_list:
-                if self._debug;
+                if self._debug:
                     _LOGGER.error(f"{self._name} JSON Switch command: {command}")
                 if command[0] == "Brightness":
                     ent = command[1]
@@ -465,8 +466,8 @@ class NewLight(LightEntity):
 
                     if not ent in self.entities:
                         self.entities[ent] = RightLight(ent, self.hass)
-                        #_LOGGER.error(f"{self._name} error: Unknown entity '{ent}' in button_map.json.  Should be one of: {self.entities.keys()}")
-                        #continue
+                        # _LOGGER.error(f"{self._name} error: Unknown entity '{ent}' in button_map.json.  Should be one of: {self.entities.keys()}")
+                        # continue
 
                     rl = self.entities[ent]
 
@@ -474,7 +475,7 @@ class NewLight(LightEntity):
                         await rl.disable()
                     elif val in rl.getColorModes():
                         await rl.turn_on(mode=val)
-                    elif (val == 0) or (val == 'Off'):
+                    elif (val == 0) or (val == "Off"):
                         await rl.disable_and_turn_off()
                     else:
                         await rl.turn_on(brightness=val, brightness_override=0)
