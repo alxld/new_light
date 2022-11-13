@@ -12,5 +12,6 @@
   "codeowners": [
     "@alxld"
   ],
-  "iot_class": "local_polling"
+  "iot_class": "local_polling",
+  "integration_type": "entity"
 }
