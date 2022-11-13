@@ -402,9 +402,10 @@ class NewLight(LightEntity):
         self._effect_list = state.attributes.get(ATTR_EFFECT_LIST)
 
         # Reload JSON buttonmap regularly
-        self._button_map_data = json.load(
-            open(f"custom_components/{self._name}/button_map.json")
-        )
+        if self.has_json:
+            self._button_map_data = json.load(
+                open(f"custom_components/{self._name}/button_map.json")
+            )
 
     @callback
     async def switch_message_received(self, topic: str, payload: str, qos: int) -> None:
