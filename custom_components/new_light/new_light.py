@@ -194,6 +194,12 @@ class NewLight(LightEntity):
                 self.hass, self.harmony_entity, self.harmony_update
             )
 
+        # Subscribe to other entity events
+        for ent in self.other_light_trackers.keys():
+            event.async_track_state_change_event(
+                self.hass, ent, self.other_entity_update
+            )
+
         self.async_schedule_update_ha_state(force_refresh=True)
 
     @property
