@@ -201,7 +201,7 @@ class NewLight(LightEntity):
         # Subscribe to other entity events
         for ent in self.other_light_trackers.keys():
             event.async_track_state_change_event(
-                self.hass, ent, self.other_entity_updatl
+                self.hass, ent, self.other_entity_update
             )
 
         self.async_schedule_update_ha_state(force_refresh=True)
@@ -526,9 +526,15 @@ class NewLight(LightEntity):
     async def motion_sensor_message_received(
         self, topic: str, payload: str, qos: int
     ) -> None:
-        _LOGGER.error(f"{self._name} motion sensor: {topic}, {payload}, {qos}")
+        if self._debug:
+            _LOGGER.error(f"{self._name} motion sensor: {topic}, {payload}, {qos}")
+
+        if not topic in self._occupancy:
+            _LOGGER.error(f"{self._name}: Unexpected motion sensor name: {topic}")
+            return
+
         """A new MQTT message has been received."""
-        if self._occupancy == payload["occupancy"]:
+        if self._occupancy[topic] == payload["occupancy"]:
             # No change to state
             return
 
