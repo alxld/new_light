@@ -44,53 +44,46 @@ _LOGGER = logging.getLogger(__name__)
 class NewLight(LightEntity):
     """New Light Super Class"""
 
-    entities = OrderedDict()
-    """Dictionary of entities.  Each will be a rightlight object and be addressable from the json buttonmap.  The first
-    added entity will be the default entity for this light."""
-
-    has_switch = False
-    """Does this light have an associated switch?  Override to set to true if needed"""
-
-    switch = None
-    """MQTT topic to monitor for switch activity.  Typically '<room> Switch' """
-
-    # has_json = False
-    # """Does this light have a JSON buttonmap?  Override to set to true if needed"""
-
-    # has_motion_sensor = False
-    # """Does this light have an associated motion sensor?  Override to set to true if needed"""
-
-    motion_sensors = []
-    """A list of motion sensors that can turn this light on and off"""
-
-    has_brightness_threshold = False
-    """Does this light use a brightness threshold switch?  Override to set to true if needed"""
-
-    brightness_threshold = 128
-    """Brightness threshold above which to also turn on second light entity"""
-
-    # has_harmony = False
-    # """Does this light have an associated Harmony hub?  Override to set to true if needed"""
-
-    harmony_entity = None
-    """Entity name of harmony hub if one exists"""
-
-    brightness_step = 43
-    """Step to increment/decrement brightness when using a switch"""
-
-    motion_sensor_brightness = 192
-    """Brightness of this light when a motion sensor turns it on"""
-
-    other_light_trackers = {}
-    """Dictionary of entity=brightness values that turn this light on to brightness when entity turns on"""
-
-    track_other_light_off_events = False
-    """When set to true, will also turn off this light when all other lights being tracked are off"""
-
     def __init__(self, name, debug=False, debug_rl=False) -> None:
         """Initialize NewLight Super Class."""
-        self._name = name
-        # self._state = 'off'
+
+        self.entities = OrderedDict()
+        """Dictionary of entities.  Each will be a rightlight object and be addressable from the json buttonmap.  The first
+        added entity will be the default entity for this light."""
+
+        self.has_switch = False
+        """Does this light have an associated switch?  Override to set to true if needed"""
+
+        self.switch = None
+        """MQTT topic to monitor for switch activity.  Typically '<room> Switch' """
+
+        self.motion_sensors = []
+        """A list of motion sensors that can turn this light on and off"""
+
+        self.has_brightness_threshold = False
+        """Does this light use a brightness threshold switch?  Override to set to true if needed"""
+
+        self.brightness_threshold = 128
+        """Brightness threshold above which to also turn on second light entity"""
+
+        self.harmony_entity = None
+        """Entity name of harmony hub if one exists"""
+
+        self.brightness_step = 43
+        """Step to increment/decrement brightness when using a switch"""
+
+        self.motion_sensor_brightness = 192
+        """Brightness of this light when a motion sensor turns it on"""
+
+        self.other_light_trackers = {}
+        """Dictionary of entity=brightness values that turn this light on to brightness when entity turns on"""
+
+        self.track_other_light_off_events = False
+        """When set to true, will also turn off this light when all other lights being tracked are off"""
+
+        self.name = name
+        """Name of this object"""
+
         self._brightness = 0
         """Light's current brightness"""
         self._brightness_override = 0
@@ -112,17 +105,15 @@ class NewLight(LightEntity):
         self._available = True
         """Boolean to show if light is available (always true)"""
         self._occupancies = {}
-        for ms in self._occupancies:
-            self._occupancies[ms] = False
         """Array of booleans for tracking individual motion sensor state"""
         self._occupancy = False
         """Single attribute for tracking overall occupancy state"""
-        self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, self._name, [])
+        self._entity_id = generate_entity_id(ENTITY_ID_FORMAT, self.name, [])
         """Generates a unique entity ID based on instance's name"""
         # self._white_value: Optional[int] = None
         self._effect_list: Optional[List[str]] = None
         """A list of supported effects"""
-        self._button_map_file = f"custom_components/{self._name}/button_map.json"
+        self._button_map_file = f"custom_components/{self.name}/button_map.json"
         """Name of the optional JSON button map file"""
         self._button_map_data = None
         """Data loaded from optional JSON button map script"""
@@ -160,10 +151,15 @@ class NewLight(LightEntity):
         """Boolean to enable RightLight debug mode"""
 
         if self._debug:
-            _LOGGER.info(f"{self._name} Light initialized")
+            _LOGGER.info(f"{self.name} Light initialized")
 
     async def async_added_to_hass(self) -> None:
         """Initialize light objects"""
+
+        # Start with all motion sensor states as off
+        for ms in self._occupancies:
+            self._occupancies[ms] = False
+
         # Instantiate per-entity rightlight objects
         for entname in self.entities.keys():
             self.entities[entname] = RightLight(entname, self.hass, self._debug_rl)
@@ -214,7 +210,7 @@ class NewLight(LightEntity):
     @property
     def name(self) -> str:
         """Return the display name of this light."""
-        return self._name
+        return self.name
 
     @property
     def is_on(self) -> bool | None:
@@ -226,9 +222,9 @@ class NewLight(LightEntity):
         prop = {
             "identifiers": {
                 # Serial numbers are unique identifiers within a specific domain
-                (self._name, self.unique_id)
+                (self.name, self.unique_id)
             },
-            "name": self._name,
+            "name": self.name,
             "manufacturer": "Aaron",
         }
         return prop
@@ -236,7 +232,7 @@ class NewLight(LightEntity):
     @property
     def unique_id(self):
         """Return the unique id of the light."""
-        return self.entity_id
+        return self._entity_id
 
     @property
     def available(self) -> bool:
@@ -281,7 +277,7 @@ class NewLight(LightEntity):
     async def async_turn_on(self, **kwargs) -> None:
         """Instruct the light to turn on."""
         if self._debug:
-            _LOGGER.error(f"{self._name} LIGHT ASYNC_TURN_ON: {kwargs}")
+            _LOGGER.error(f"{self.name} LIGHT ASYNC_TURN_ON: {kwargs}")
 
         if "brightness" in kwargs:
             self._brightness = kwargs["brightness"]
@@ -419,7 +415,7 @@ class NewLight(LightEntity):
     async def async_update(self):
         """Query light and determine the state."""
         if self._debug:
-            _LOGGER.error(f"{self._name} LIGHT ASYNC_UPDATE")
+            _LOGGER.error(f"{self.name} LIGHT ASYNC_UPDATE")
 
         f, r = self.getEntityNames()
         state = self.hass.states.get(f)
@@ -441,7 +437,7 @@ class NewLight(LightEntity):
     @callback
     async def switch_message_received(self, topic: str, payload: str, qos: int) -> None:
         """A new MQTT message has been received."""
-        # self.hass.states.async_set(f"light.{self._name}", f"ENT: {payload}")
+        # self.hass.states.async_set(f"light.{self.name}", f"ENT: {payload}")
 
         self.switched_on = True
         if payload == "on-press":
@@ -458,7 +454,7 @@ class NewLight(LightEntity):
         elif payload == "down-press":
             await self.down_brightness(source="Switch")
         else:
-            _LOGGER.error(f"{self._name} switch handler fail: {payload}")
+            _LOGGER.error(f"{self.name} switch handler fail: {payload}")
 
     @callback
     async def json_switch_message_received(
@@ -479,7 +475,7 @@ class NewLight(LightEntity):
 
             for command in this_list:
                 if self._debug:
-                    _LOGGER.error(f"{self._name} JSON Switch command: {command}")
+                    _LOGGER.error(f"{self.name} JSON Switch command: {command}")
                 if command[0] == "Brightness":
                     ent = command[1]
                     br = command[2]
@@ -498,7 +494,7 @@ class NewLight(LightEntity):
 
                     if not ent in self.entities:
                         self.entities[ent] = RightLight(ent, self.hass, self._debug_rl)
-                        # _LOGGER.error(f"{self._name} error: Unknown entity '{ent}' in button_map.json.  Should be one of: {self.entities.keys()}")
+                        # _LOGGER.error(f"{self.name} error: Unknown entity '{ent}' in button_map.json.  Should be one of: {self.entities.keys()}")
                         # continue
 
                     rl = self.entities[ent]
@@ -513,13 +509,13 @@ class NewLight(LightEntity):
                         await rl.turn_on(brightness=val, brightness_override=0)
                 elif command[0] == "Scene":
                     if self._debug:
-                        _LOGGER.error(f"{self._name} JSON Switch Scene: {command[1]}")
+                        _LOGGER.error(f"{self.name} JSON Switch Scene: {command[1]}")
                     await self.hass.services.async_call(
                         "scene", "turn_on", {"entity_id": command[1]}
                     )
                 else:
                     _LOGGER.error(
-                        f"{self._name} error - unrecognized button_map.json command type: {command[0]}"
+                        f"{self.name} error - unrecognized button_map.json command type: {command[0]}"
                     )
 
     @callback
@@ -527,14 +523,16 @@ class NewLight(LightEntity):
         self, topic: str, payload: str, qos: int
     ) -> None:
         if self._debug:
-            _LOGGER.error(f"{self._name} motion sensor: {topic}, {payload}, {qos}")
+            _LOGGER.error(f"{self.name} motion sensor: {topic}, {payload}, {qos}")
 
-        if not topic in self._occupancy:
-            _LOGGER.error(f"{self._name}: Unexpected motion sensor name: {topic}")
+        z, ms = topic.split("/")
+
+        if not ms in self._occupancies:
+            _LOGGER.error(f"{self.name}: Unexpected motion sensor name: {ms}")
             return
 
         """A new MQTT message has been received."""
-        if self._occupancy[topic] == payload["occupancy"]:
+        if self._occupancies[ms] == payload["occupancy"]:
             # No change to state
             return
 
@@ -567,4 +565,4 @@ class NewLight(LightEntity):
         """Track events of other entities"""
         ev = this_event.as_dict()
         if self._debug:
-            _LOGGER.error(f"{self._name} other entity update: {ev}")
+            _LOGGER.error(f"{self.name} other entity update: {ev}")
