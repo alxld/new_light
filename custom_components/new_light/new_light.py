@@ -60,6 +60,9 @@ class NewLight(LightEntity):
     has_motion_sensor = False
     """Does this light have an associated motion sensor?  Override to set to true if needed"""
 
+    motion_sensors = []
+    """A list of motion sensors that can turn this light on and off"""
+
     has_brightness_threshold = False
     """Does this light use a brightness threshold switch?  Override to set to true if needed"""
 
@@ -102,8 +105,12 @@ class NewLight(LightEntity):
         """Boolean to show if light is on"""
         self._available = True
         """Boolean to show if light is available (always true)"""
+        self._occupancies = {}
+        for ms in self._occupancies:
+            self._occupancies[ms] = False
+        """Array of booleans for tracking individual motion sensor state"""
         self._occupancy = False
-        """Boolean for tracking motion sensor state"""
+        """Single attribute for tracking overall occupancy state"""
         self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, self._name, [])
         """Generates a unique entity ID based on instance's name"""
         # self._white_value: Optional[int] = None
@@ -163,10 +170,16 @@ class NewLight(LightEntity):
                 )
 
         # Subscribe to motion sensor events
-        if self.has_motion_sensor:
+        for ms in self.motion_sensors:
+            action = f"zigbee2mqtt/{ms}/action"
             await self.hass.components.mqtt.async_subscribe(
-                self.motion_sensor_action, self.motion_sensor_message_received
+                action, self.motion_sensor_message_received
             )
+
+        # if self.has_motion_sensor:
+        #    await self.hass.components.mqtt.async_subscribe(
+        #        self.motion_sensor_action, self.motion_sensor_message_received
+        #    )
 
         # Subscribe to harmony events
         if self.has_harmony:
@@ -498,12 +511,14 @@ class NewLight(LightEntity):
     async def motion_sensor_message_received(
         self, topic: str, payload: str, qos: int
     ) -> None:
+        _LOGGER.error(f"{self._name} motion sensor: {topic}, {payload}, {qos}")
         """A new MQTT message has been received."""
         if self._occupancy == payload["occupancy"]:
             # No change to state
             return
 
-        self._occupancy = payload["occupancy"]
+        # self._occupancy = payload["occupancy"]
+        self._occupancy = any(self._occupancies.values())
 
         # Disable motion sensor tracking if the lights are switched on or the harmony is on
         if self.switched_on or (self.has_harmony and self._harmony_on):
