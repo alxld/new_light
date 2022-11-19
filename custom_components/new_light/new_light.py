@@ -81,7 +81,7 @@ class NewLight(LightEntity):
         self.track_other_light_off_events = False
         """When set to true, will also turn off this light when all other lights being tracked are off"""
 
-        self.name = name
+        self._name = name
         """Name of this object"""
 
         self._brightness = 0
@@ -210,7 +210,7 @@ class NewLight(LightEntity):
     @property
     def name(self) -> str:
         """Return the display name of this light."""
-        return self.name
+        return self._name
 
     @property
     def is_on(self) -> bool | None:
