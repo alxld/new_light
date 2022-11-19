@@ -81,6 +81,12 @@ class NewLight(LightEntity):
     motion_sensor_brightness = 192
     """Brightness of this light when a motion sensor turns it on"""
 
+    other_light_trackers = {}
+    """Dictionary of entity=brightness values that turn this light on to brightness when entity turns on"""
+
+    track_other_light_off_events = False
+    """When set to true, will also turn off this light when all other lights being tracked are off"""
+
     def __init__(self, name, debug=False, debug_rl=False) -> None:
         """Initialize NewLight Super Class."""
         self._name = name
@@ -541,3 +547,10 @@ class NewLight(LightEntity):
             self._harmony_on = True
         else:
             self._harmony_on = False
+
+    @callback
+    async def other_entity_update(self, this_event):
+        """Track events of other entities"""
+        ev = this_event.as_dict()
+        if self._debug:
+            _LOGGER.error(f"{self._name} other entity update: {ev}")
