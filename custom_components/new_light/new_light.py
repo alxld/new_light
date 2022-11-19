@@ -57,8 +57,8 @@ class NewLight(LightEntity):
     has_json = False
     """Does this light have a JSON buttonmap?  Override to set to true if needed"""
 
-    has_motion_sensor = False
-    """Does this light have an associated motion sensor?  Override to set to true if needed"""
+    # has_motion_sensor = False
+    # """Does this light have an associated motion sensor?  Override to set to true if needed"""
 
     motion_sensors = []
     """A list of motion sensors that can turn this light on and off"""
@@ -172,7 +172,7 @@ class NewLight(LightEntity):
 
         # Subscribe to motion sensor events
         for ms in self.motion_sensors:
-            action = f"zigbee2mqtt/{ms}/action"
+            action = f"zigbee2mqtt/{ms}"
             await self.hass.components.mqtt.async_subscribe(
                 action, self.motion_sensor_message_received
             )
