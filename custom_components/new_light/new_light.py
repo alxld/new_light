@@ -51,8 +51,8 @@ class NewLight(LightEntity):
     has_switch = False
     """Does this light have an associated switch?  Override to set to true if needed"""
 
-    switch_action = None
-    """MQTT topic to monitor for switch activity.  Typically zigbee2mqtt/<room> Switch/action"""
+    switch = None
+    """MQTT topic to monitor for switch activity.  Typically '<room> Switch' """
 
     has_json = False
     """Does this light have a JSON buttonmap?  Override to set to true if needed"""
@@ -159,14 +159,15 @@ class NewLight(LightEntity):
             self.entities[entname] = RightLight(entname, self.hass, self._debug_rl)
 
         # Subscribe to switch events
-        if self.has_switch:
+        if self.switch != None:
+            switch_action = f"zigbee2mqtt/{self.switch}/action"
             if self.has_json:
                 await self.hass.components.mqtt.async_subscribe(
-                    self.switch_action, self.json_switch_message_received
+                    switch_action, self.json_switch_message_received
                 )
             else:
                 await self.hass.components.mqtt.async_subscribe(
-                    self.switch_action, self.switch_message_received
+                    switch_action, self.switch_message_received
                 )
 
         # Subscribe to motion sensor events
