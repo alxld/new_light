@@ -78,7 +78,7 @@ class NewLight(LightEntity):
     motion_sensor_brightness = 192
     """Brightness of this light when a motion sensor turns it on"""
 
-    def __init__(self, name, debug=False) -> None:
+    def __init__(self, name, debug=False, debug_rl=False) -> None:
         """Initialize NewLight Super Class."""
         self._name = name
         # self._state = 'off'
@@ -139,6 +139,9 @@ class NewLight(LightEntity):
         self._debug = debug
         """Boolean to enable debug mode"""
 
+        self._debug = debug
+        """Boolean to enable RightLight debug mode"""
+
         if self._debug:
             _LOGGER.info(f"{self._name} Light initialized")
 
@@ -146,7 +149,7 @@ class NewLight(LightEntity):
         """Initialize light objects"""
         # Instantiate per-entity rightlight objects
         for entname in self.entities.keys():
-            self.entities[entname] = RightLight(entname, self.hass)
+            self.entities[entname] = RightLight(entname, self.hass, self._debug_rl)
 
         # Subscribe to switch events
         if self.has_switch:
@@ -466,7 +469,7 @@ class NewLight(LightEntity):
                     val = command[2]
 
                     if not ent in self.entities:
-                        self.entities[ent] = RightLight(ent, self.hass)
+                        self.entities[ent] = RightLight(ent, self.hass, self._debug_rl)
                         # _LOGGER.error(f"{self._name} error: Unknown entity '{ent}' in button_map.json.  Should be one of: {self.entities.keys()}")
                         # continue
 
