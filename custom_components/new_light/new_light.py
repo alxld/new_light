@@ -69,8 +69,8 @@ class NewLight(LightEntity):
     brightness_threshold = 128
     """Brightness threshold above which to also turn on second light entity"""
 
-    has_harmony = False
-    """Does this light have an associated Harmony hub?  Override to set to true if needed"""
+    # has_harmony = False
+    # """Does this light have an associated Harmony hub?  Override to set to true if needed"""
 
     harmony_entity = None
     """Entity name of harmony hub if one exists"""
@@ -183,7 +183,7 @@ class NewLight(LightEntity):
         #    )
 
         # Subscribe to harmony events
-        if self.has_harmony:
+        if self.harmony_entity != None:
             event.async_track_state_change_event(
                 self.hass, self.harmony_entity, self.harmony_update
             )
@@ -522,7 +522,7 @@ class NewLight(LightEntity):
         self._occupancy = any(self._occupancies.values())
 
         # Disable motion sensor tracking if the lights are switched on or the harmony is on
-        if self.switched_on or (self.has_harmony and self._harmony_on):
+        if self.switched_on or ((self.harmony_entity != None) and self._harmony_on):
             return
 
         if self._occupancy:
