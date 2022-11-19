@@ -139,7 +139,7 @@ class NewLight(LightEntity):
         self._debug = debug
         """Boolean to enable debug mode"""
 
-        self._debug = debug
+        self._debug_rl = debug_rl
         """Boolean to enable RightLight debug mode"""
 
         if self._debug:
