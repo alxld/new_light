@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 import json
 import logging
-import sys
+import sys, os
 
 from homeassistant.components.light import (  # ATTR_EFFECT,; ATTR_FLASH,; ATTR_WHITE_VALUE,; PLATFORM_SCHEMA,; SUPPORT_EFFECT,; SUPPORT_FLASH,; SUPPORT_WHITE_VALUE,; ATTR_SUPPORTED_COLOR_MODES,
     ATTR_BRIGHTNESS,
@@ -54,8 +54,8 @@ class NewLight(LightEntity):
     switch = None
     """MQTT topic to monitor for switch activity.  Typically '<room> Switch' """
 
-    has_json = False
-    """Does this light have a JSON buttonmap?  Override to set to true if needed"""
+    # has_json = False
+    # """Does this light have a JSON buttonmap?  Override to set to true if needed"""
 
     # has_motion_sensor = False
     # """Does this light have an associated motion sensor?  Override to set to true if needed"""
@@ -122,6 +122,10 @@ class NewLight(LightEntity):
         # self._white_value: Optional[int] = None
         self._effect_list: Optional[List[str]] = None
         """A list of supported effects"""
+        self._button_map_file = f"custom_components/{self._name}/button_map.json"
+        """Name of the optional JSON button map file"""
+        self._button_map_data = None
+        """Data loaded from optional JSON button map script"""
         # self._effect: Optional[str] = None
         self._supported_features: int = 0
         """Supported features of this light.  OR togther SUPPORT_BRIGHTNESS, SUPPORT_COLOR_TEMP, SUPPORT_COLOR, SUPPORT_TRANSITION"""
@@ -167,7 +171,7 @@ class NewLight(LightEntity):
         # Subscribe to switch events
         if self.switch != None:
             switch_action = f"zigbee2mqtt/{self.switch}/action"
-            if self.has_json:
+            if os.path.exists(self._button_map_file):
                 await self.hass.components.mqtt.async_subscribe(
                     switch_action, self.json_switch_message_received
                 )
@@ -197,7 +201,7 @@ class NewLight(LightEntity):
         # Subscribe to other entity events
         for ent in self.other_light_trackers.keys():
             event.async_track_state_change_event(
-                self.hass, ent, self.other_entity_update
+                self.hass, ent, self.other_entity_updatl
             )
 
         self.async_schedule_update_ha_state(force_refresh=True)
@@ -431,10 +435,8 @@ class NewLight(LightEntity):
         self._effect_list = state.attributes.get(ATTR_EFFECT_LIST)
 
         # Reload JSON buttonmap regularly
-        if self.has_json:
-            self._button_map_data = json.load(
-                open(f"custom_components/{self._name}/button_map.json")
-            )
+        if os.path.exists(self._button_map_file):
+            self._button_map_data = json.load(open(self._button_map_file))
 
     @callback
     async def switch_message_received(self, topic: str, payload: str, qos: int) -> None:
