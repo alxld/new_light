@@ -537,7 +537,7 @@ class NewLight(LightEntity):
             # No change to state
             return
 
-        # self._occupancy = payload["occupancy"]
+        self.__occupancies[ms] = payload["occupancy"]
         self._occupancy = any(self._occupancies.values())
 
         # Disable motion sensor tracking if the lights are switched on or the harmony is on
