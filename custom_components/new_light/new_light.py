@@ -81,6 +81,9 @@ class NewLight(LightEntity):
         self.track_other_light_off_events = False
         """When set to true, will also turn off this light when all other lights being tracked are off"""
 
+        self.turn_off_other_lights = False
+        """Turn off any tracked light when an on event is received (for template lights as buttons)"""
+
         self._name = name
         """Name of this object"""
 
@@ -150,6 +153,9 @@ class NewLight(LightEntity):
         self._debug_rl = debug_rl
         """Boolean to enable RightLight debug mode"""
 
+        self._others = {}
+        """Dictionary of states of other lights being tracked"""
+
         if self._debug:
             _LOGGER.info(f"{self.name} Light initialized")
 
@@ -159,6 +165,10 @@ class NewLight(LightEntity):
         # Start with all motion sensor states as off
         for ms in self.motion_sensors:
             self._occupancies[ms] = False
+
+        # Dictionary to track other light states
+        for ent in self.other_light_trackers:
+            self._others[ent] = False
 
         # Instantiate per-entity rightlight objects
         for entname in self.entities.keys():
@@ -537,7 +547,7 @@ class NewLight(LightEntity):
             # No change to state
             return
 
-        self.__occupancies[ms] = payload["occupancy"]
+        self._occupancies[ms] = payload["occupancy"]
         self._occupancy = any(self._occupancies.values())
 
         # Disable motion sensor tracking if the lights are switched on or the harmony is on
@@ -567,3 +577,19 @@ class NewLight(LightEntity):
         ev = this_event.as_dict()
         if self._debug:
             _LOGGER.error(f"{self.name} other entity update: {ev}")
+
+        ent = ev["data"]["entity_id"]
+        ns = ev["data"]["new_state"].state
+
+        if ns == "on":
+            self._others[ent] = True
+            await self.async_turn_on(brightness=self.other_light_trackers[ent])
+            if self.turn_off_other_lights:
+                await self.hass.services.async_call(
+                    "light", "turn_off", {"entity_id": ent}
+                )
+        elif self.track_other_light_off_events and ns == "off":
+            self._others[ent] = False
+
+            if not any(self._others.values()):
+                await self.async_turn_off()
