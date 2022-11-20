@@ -439,7 +439,7 @@ class NewLight(LightEntity):
         """A new MQTT message has been received."""
         # self.hass.states.async_set(f"light.{self.name}", f"ENT: {payload}")
 
-        self.switched_on = True
+        self._switched_on = True
         if payload == "on-press":
             self._brightness_override = 0
             await self.async_turn_on(source="Switch", brightness=255)
@@ -447,7 +447,7 @@ class NewLight(LightEntity):
             self._brightness_override = 128
             await self.async_turn_on(source="Switch", brightness=255)
         elif payload == "off-press":
-            self.switched_on = False
+            self._switched_on = False
             await self.async_turn_off(source="Switch")
         elif payload == "up-press":
             await self.up_brightness(source="Switch")
@@ -541,7 +541,7 @@ class NewLight(LightEntity):
         self._occupancy = any(self._occupancies.values())
 
         # Disable motion sensor tracking if the lights are switched on or the harmony is on
-        if self.switched_on or ((self.harmony_entity != None) and self._harmony_on):
+        if self._switched_on or ((self.harmony_entity != None) and self._harmony_on):
             return
 
         if self._occupancy:
