@@ -157,7 +157,7 @@ class NewLight(LightEntity):
         """Initialize light objects"""
 
         # Start with all motion sensor states as off
-        for ms in self._occupancies:
+        for ms in self.motion_sensors:
             self._occupancies[ms] = False
 
         # Instantiate per-entity rightlight objects
@@ -525,6 +525,7 @@ class NewLight(LightEntity):
         if self._debug:
             _LOGGER.error(f"{self.name} motion sensor: {topic}, {payload}, {qos}")
 
+        payload = json.loads(payload)
         z, ms = topic.split("/")
 
         if not ms in self._occupancies:
