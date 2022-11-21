@@ -347,6 +347,7 @@ class NewLight(LightEntity):
         if ATTR_TRANSITION in kwargs:
             data[ATTR_TRANSITION] = kwargs[ATTR_TRANSITION]
         if ATTR_EFFECT in kwargs:
+            rl = True
             rlmode = kwargs[ATTR_EFFECT]
         else:
             rlmode = "Normal"
@@ -363,6 +364,7 @@ class NewLight(LightEntity):
                 brightness=self._brightness,
                 brightness_override=self._brightness_override,
                 mode=rlmode,
+                transition=data['transition']
             )
         else:
             # Use for other modes, like specific color or temperatures
@@ -378,6 +380,7 @@ class NewLight(LightEntity):
                     brightness=self._brightness,
                     brightness_override=self._brightness_override,
                     mode=rlmode,
+                    transition=data['transition']
                 )
             else:
                 # Use for other modes, like specific color or temperatures
