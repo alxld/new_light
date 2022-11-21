@@ -10,6 +10,7 @@ from homeassistant.components.light import (  # ATTR_EFFECT,; ATTR_FLASH,; ATTR_
     ATTR_BRIGHTNESS,
     ATTR_COLOR_MODE,
     ATTR_COLOR_TEMP,
+    ATTR_EFFECT,
     ATTR_EFFECT_LIST,
     ATTR_HS_COLOR,
     ATTR_MAX_MIREDS,
@@ -345,6 +346,10 @@ class NewLight(LightEntity):
             data[ATTR_COLOR_MODE] = kwargs[ATTR_COLOR_MODE]
         if ATTR_TRANSITION in kwargs:
             data[ATTR_TRANSITION] = kwargs[ATTR_TRANSITION]
+        if ATTR_EFFECT in kwargs:
+            rlmode = kwargs[ATTR_EFFECT]
+        else:
+            rlmode = "Normal"
 
         f, r = self.getEntityNames()
 
@@ -357,6 +362,7 @@ class NewLight(LightEntity):
             await self.entities[f].turn_on(
                 brightness=self._brightness,
                 brightness_override=self._brightness_override,
+                mode=rlmode,
             )
         else:
             # Use for other modes, like specific color or temperatures
@@ -371,6 +377,7 @@ class NewLight(LightEntity):
                 await self.entities[r[0]].turn_on(
                     brightness=self._brightness,
                     brightness_override=self._brightness_override,
+                    mode=rlmode,
                 )
             else:
                 # Use for other modes, like specific color or temperatures
