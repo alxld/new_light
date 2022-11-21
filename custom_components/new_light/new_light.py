@@ -179,7 +179,7 @@ class NewLight(LightEntity):
             self.entities[entname] = RightLight(entname, self.hass, self._debug_rl)
 
             # Add RightLight color mode to effects list
-            self._effect_list = self.entities[entname].getColorModes()
+            self._effect_list = ["Normal"] + self.entities[entname].getColorModes()
 
         # Subscribe to switch events
         if self.switch != None:
@@ -290,6 +290,10 @@ class NewLight(LightEntity):
     def supported_features(self) -> int:
         """Flag supported features."""
         return self._supported_features
+
+    @property
+    def effect(self):
+        return "Normal"
 
     @property
     def effect_list(self) -> list[str] | None:
