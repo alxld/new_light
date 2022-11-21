@@ -118,7 +118,7 @@ class NewLight(LightEntity):
         """A list of supported effects"""
         self._button_map_file = f"custom_components/{self.name}/button_map.json"
         """Name of the optional JSON button map file"""
-        self._button_map_data = None
+        self._button_map_data = {}
         """Data loaded from optional JSON button map script"""
         # self._effect: Optional[str] = None
         self._supported_features: int = 0
@@ -512,7 +512,7 @@ class NewLight(LightEntity):
         elif (payload == "up-press") or (payload == "up-hold"):
             self.clearButtonCounts()
             await self.up_brightness(source="Switch")
-        elif (payload == "down-press") or (payload == "up-hold"):
+        elif (payload == "down-press") or (payload == "down-hold"):
             self.clearButtonCounts()
             await self.down_brightness(source="Switch")
         elif payload == "off-press":
