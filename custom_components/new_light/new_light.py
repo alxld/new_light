@@ -21,6 +21,7 @@ from homeassistant.components.light import (  # ATTR_EFFECT,; ATTR_FLASH,; ATTR_
     SUPPORT_COLOR,
     SUPPORT_COLOR_TEMP,
     SUPPORT_TRANSITION,
+    SUPPORT_EFFECT,
     LightEntity,
 )
 from homeassistant.const import (  # ATTR_SUPPORTED_FEATURES,; CONF_ENTITY_ID,; CONF_NAME,; CONF_OFFSET,; CONF_UNIQUE_ID,; EVENT_HOMEASSISTANT_START,; STATE_ON,; STATE_UNAVAILABLE,
@@ -129,6 +130,7 @@ class NewLight(LightEntity):
         self._supported_features |= SUPPORT_COLOR_TEMP
         self._supported_features |= SUPPORT_COLOR
         self._supported_features |= SUPPORT_TRANSITION
+        self._supported_features |= SUPPORT_EFFECT
         # self._supported_features |= SUPPORT_WHITE_VALUE
 
         self._buttonCounts = {
