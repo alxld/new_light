@@ -44,7 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 class NewLight(LightEntity):
     """New Light Super Class"""
 
-    def __init__(self, name, debug=False, debug_rl=False) -> None:
+    def __init__(self, name, domain="UNKNOWN", debug=False, debug_rl=False) -> None:
         """Initialize NewLight Super Class."""
 
         self.entities = OrderedDict()
@@ -116,7 +116,7 @@ class NewLight(LightEntity):
         # self._white_value: Optional[int] = None
         self._effect_list: Optional[List[str]] = None
         """A list of supported effects"""
-        self._button_map_file = f"custom_components/{self.name}/button_map.json"
+        self._button_map_file = f"custom_components/{domain}/button_map.json"
         """Name of the optional JSON button map file"""
         self._button_map_timestamp = 0
         """Store timestamp of previously loaded button map file"""
