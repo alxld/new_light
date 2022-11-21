@@ -49,7 +49,7 @@ class NewLight(LightEntity):
 
         self.entities = OrderedDict()
         """Dictionary of entities.  Each will be a rightlight object and be addressable from the json buttonmap.  The first
-        added entity will be the default entity for this light."""
+        added entity will be the default entity for this light.  The second entity will be used for brightness threshold."""
 
         self.has_switch = False
         """Does this light have an associated switch?  Override to set to true if needed"""
@@ -177,14 +177,14 @@ class NewLight(LightEntity):
         # Subscribe to switch events
         if self.switch != None:
             switch_action = f"zigbee2mqtt/{self.switch}/action"
-            if os.path.exists(self._button_map_file):
-                await self.hass.components.mqtt.async_subscribe(
-                    switch_action, self.json_switch_message_received
-                )
-            else:
-                await self.hass.components.mqtt.async_subscribe(
-                    switch_action, self.switch_message_received
-                )
+            # if os.path.exists(self._button_map_file):
+            #    await self.hass.components.mqtt.async_subscribe(
+            #        switch_action, self.json_switch_message_received
+            #    )
+            # else:
+            await self.hass.components.mqtt.async_subscribe(
+                switch_action, self.switch_message_received
+            )
 
         # Subscribe to motion sensor events
         for ms in self.motion_sensors:
@@ -450,32 +450,13 @@ class NewLight(LightEntity):
         # self.hass.states.async_set(f"light.{self.name}", f"ENT: {payload}")
 
         self._switched_on = True
-        if payload == "on-press":
-            self._brightness_override = 0
-            await self.async_turn_on(source="Switch", brightness=255)
-        elif payload == "on-hold":
-            self._brightness_override = 128
-            await self.async_turn_on(source="Switch", brightness=255)
-        elif payload == "off-press":
-            self._switched_on = False
-            await self.async_turn_off(source="Switch")
-        elif payload == "up-press":
-            await self.up_brightness(source="Switch")
-        elif payload == "down-press":
-            await self.down_brightness(source="Switch")
-        else:
-            _LOGGER.error(f"{self.name} switch handler fail: {payload}")
 
-    @callback
-    async def json_switch_message_received(
-        self, topic: str, payload: str, qos: int
-    ) -> None:
-        """A new MQTT message has been received."""
-        if payload in self._button_map_data.keys():
+        if ("-hold" in payload) and (payload in self._button_map_data):
+            # JSON found for this button press, and this button has been pressed more than once
             config_list = self._button_map_data[payload]
             this_list = config_list[self._buttonCounts[payload]]
 
-            # Increment button count and loop to zero.  Zero out the rest
+            # Increment button count and loop to zero.  Zero out the other buttons' counts
             self._buttonCounts[payload] += 1
             if self._buttonCounts[payload] >= len(config_list):
                 self._buttonCounts[payload] = 0
@@ -504,8 +485,6 @@ class NewLight(LightEntity):
 
                     if not ent in self.entities:
                         self.entities[ent] = RightLight(ent, self.hass, self._debug_rl)
-                        # _LOGGER.error(f"{self.name} error: Unknown entity '{ent}' in button_map.json.  Should be one of: {self.entities.keys()}")
-                        # continue
 
                     rl = self.entities[ent]
 
@@ -518,8 +497,6 @@ class NewLight(LightEntity):
                     else:
                         await rl.turn_on(brightness=val, brightness_override=0)
                 elif command[0] == "Scene":
-                    if self._debug:
-                        _LOGGER.error(f"{self.name} JSON Switch Scene: {command[1]}")
                     await self.hass.services.async_call(
                         "scene", "turn_on", {"entity_id": command[1]}
                     )
@@ -527,6 +504,90 @@ class NewLight(LightEntity):
                     _LOGGER.error(
                         f"{self.name} error - unrecognized button_map.json command type: {command[0]}"
                     )
+
+        elif payload == "on-press":
+            self.clearButtonCounts()
+            self._brightness_override = 0
+            await self.async_turn_on(source="Switch", brightness=255)
+        elif (payload == "up-press") or (payload == "up-hold"):
+            self.clearButtonCounts()
+            await self.up_brightness(source="Switch")
+        elif (payload == "down-press") or (payload == "up-hold"):
+            self.clearButtonCounts()
+            await self.down_brightness(source="Switch")
+        elif payload == "off-press":
+            self.clearButtonCounts()
+            self._switched_on = False
+            await self.async_turn_off(source="Switch")
+        else:
+            if self._debug:
+                _LOGGER.error(f"{self.name} switch handler fail: {payload}")
+
+    def clearButtonCounts(self):
+        for key in self._buttonCounts.keys():
+            self._buttonCounts[key] = 0
+
+    #    @callback
+    #    async def json_switch_message_received(
+    #        self, topic: str, payload: str, qos: int
+    #    ) -> None:
+    #        """A new MQTT message has been received."""
+    #        if payload in self._button_map_data.keys():
+    #            config_list = self._button_map_data[payload]
+    #            this_list = config_list[self._buttonCounts[payload]]
+    #
+    #            # Increment button count and loop to zero.  Zero out the rest
+    #            self._buttonCounts[payload] += 1
+    #            if self._buttonCounts[payload] >= len(config_list):
+    #                self._buttonCounts[payload] = 0
+    #            for key in self._buttonCounts.keys():
+    #                if key != payload:
+    #                    self._buttonCounts[key] = 0
+    #
+    #            for command in this_list:
+    #                if self._debug:
+    #                    _LOGGER.error(f"{self.name} JSON Switch command: {command}")
+    #                if command[0] == "Brightness":
+    #                    ent = command[1]
+    #                    br = command[2]
+    #
+    #                    if br == 0:
+    #                        await self.hass.services.async_call(
+    #                            "light", "turn_off", {"entity_id": ent}
+    #                        )
+    #                    else:
+    #                        await self.hass.services.async_call(
+    #                            "light", "turn_on", {"entity_id": ent, "brightness": br}
+    #                        )
+    #                elif command[0] == "RightLight":
+    #                    ent = command[1]
+    #                    val = command[2]
+    #
+    #                    if not ent in self.entities:
+    #                        self.entities[ent] = RightLight(ent, self.hass, self._debug_rl)
+    #                        # _LOGGER.error(f"{self.name} error: Unknown entity '{ent}' in button_map.json.  Should be one of: {self.entities.keys()}")
+    #                        # continue
+    #
+    #                    rl = self.entities[ent]
+    #
+    #                    if val == "Disable":
+    #                        await rl.disable()
+    #                    elif val in rl.getColorModes():
+    #                        await rl.turn_on(mode=val)
+    #                    elif (val == 0) or (val == "Off"):
+    #                        await rl.disable_and_turn_off()
+    #                    else:
+    #                        await rl.turn_on(brightness=val, brightness_override=0)
+    #                elif command[0] == "Scene":
+    #                    if self._debug:
+    #                        _LOGGER.error(f"{self.name} JSON Switch Scene: {command[1]}")
+    #                    await self.hass.services.async_call(
+    #                        "scene", "turn_on", {"entity_id": command[1]}
+    #                    )
+    #                else:
+    #                    _LOGGER.error(
+    #                        f"{self.name} error - unrecognized button_map.json command type: {command[0]}"
+    #                    )
 
     @callback
     async def motion_sensor_message_received(
