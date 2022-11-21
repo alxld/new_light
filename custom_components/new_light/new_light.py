@@ -176,6 +176,9 @@ class NewLight(LightEntity):
         for entname in self.entities.keys():
             self.entities[entname] = RightLight(entname, self.hass, self._debug_rl)
 
+            # Add RightLight color mode to effects list
+            self._effect_list = self.entities[entname].getColorModes()
+
         # Subscribe to switch events
         if self.switch != None:
             switch_action = f"zigbee2mqtt/{self.switch}/action"
@@ -285,6 +288,11 @@ class NewLight(LightEntity):
     def supported_features(self) -> int:
         """Flag supported features."""
         return self._supported_features
+
+    @property
+    def effect_list(self) -> list[str] | None:
+        """Return the RightLight modes are effect options"""
+        return self._effect_list
 
     async def async_turn_on(self, **kwargs) -> None:
         """Instruct the light to turn on."""
@@ -440,7 +448,7 @@ class NewLight(LightEntity):
         self._color_temp = state.attributes.get(ATTR_COLOR_TEMP, self._color_temp)
         self._min_mireds = state.attributes.get(ATTR_MIN_MIREDS, 154)
         self._max_mireds = state.attributes.get(ATTR_MAX_MIREDS, 500)
-        self._effect_list = state.attributes.get(ATTR_EFFECT_LIST)
+        # self._effect_list = state.attributes.get(ATTR_EFFECT_LIST)
 
         # Reload JSON buttonmap regularly
         if os.path.exists(self._button_map_file):
