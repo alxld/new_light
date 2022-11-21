@@ -118,6 +118,8 @@ class NewLight(LightEntity):
         """A list of supported effects"""
         self._button_map_file = f"custom_components/{self.name}/button_map.json"
         """Name of the optional JSON button map file"""
+        self._button_map_timestamp = 0
+        """Store timestamp of previously loaded button map file"""
         self._button_map_data = {}
         """Data loaded from optional JSON button map script"""
         # self._effect: Optional[str] = None
@@ -442,7 +444,12 @@ class NewLight(LightEntity):
 
         # Reload JSON buttonmap regularly
         if os.path.exists(self._button_map_file):
-            self._button_map_data = json.load(open(self._button_map_file))
+            ts = os.path.getmtime(self._button_map_file)
+            if ts > self._button_map_timestamp:
+                if self._debug:
+                    _LOGGER.error(f"{self.name} loading JSON button map file")
+                self._button_map_data = json.load(open(self._button_map_file))
+                self._button_map_timestamp = ts
 
     @callback
     async def switch_message_received(self, topic: str, payload: str, qos: int) -> None:
@@ -505,7 +512,7 @@ class NewLight(LightEntity):
                         f"{self.name} error - unrecognized button_map.json command type: {command[0]}"
                     )
 
-        elif payload == "on-press":
+        elif (payload == "on-press") or (payload == "on-hold"):
             self.clearButtonCounts()
             self._brightness_override = 0
             await self.async_turn_on(source="Switch", brightness=255)
@@ -515,7 +522,7 @@ class NewLight(LightEntity):
         elif (payload == "down-press") or (payload == "down-hold"):
             self.clearButtonCounts()
             await self.down_brightness(source="Switch")
-        elif payload == "off-press":
+        elif (payload == "off-press") or (payload == "off-hold"):
             self.clearButtonCounts()
             self._switched_on = False
             await self.async_turn_off(source="Switch")
