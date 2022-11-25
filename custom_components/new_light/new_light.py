@@ -331,6 +331,9 @@ class NewLight(LightEntity):
                 _LOGGER.error(
                     f"{self.name} LIGHT ASYNC_TURN_ON: BT: {self._brightnessBT}, AT: {self._brightnessAT}"
                 )
+                _LOGGER.error(
+                    f"{self.name} LIGHT ASYNC_TURN_ON: Entities: {self.entities.keys()}"
+                )
 
         if "source" in kwargs and kwargs["source"] == "MotionSensor":
             pass
@@ -447,7 +450,7 @@ class NewLight(LightEntity):
         f, r = self.getEntityNames()
         # Disable other entities before turning off main entity
         for ent in r:
-            await self.entities[ent].disable()
+            await self.entities[ent].disable_and_turn_off()
         await self.entities[f].disable_and_turn_off()
 
         self.async_schedule_update_ha_state(force_refresh=True)
