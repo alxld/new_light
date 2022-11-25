@@ -377,12 +377,20 @@ class NewLight(LightEntity):
 
         if rl:
             # Turn on light using RightLight
-            await self.entities[f].turn_on(
-                brightness=self._brightnessBT,
-                brightness_override=self._brightness_override,
-                mode=rlmode,
-                transition=data["transition"],
-            )
+            if self.has_brightness_threshold:
+                await self.entities[f].turn_on(
+                    brightness=self._brightnessBT,
+                    brightness_override=self._brightness_override,
+                    mode=rlmode,
+                    transition=data["transition"],
+                )
+            else:
+                await self.entities[f].turn_on(
+                    brightness=self._brightness,
+                    brightness_override=self._brightness_override,
+                    mode=rlmode,
+                    transition=data["transition"],
+                )
         else:
             # Use for other modes, like specific color or temperatures
             await self.entities[f].turn_on_specific(data)
