@@ -348,7 +348,7 @@ class NewLight(LightEntity):
             rl = True
         else:
             rl = False
-        # rl = True
+        rl = True
 
         self._is_on = True
         self._mode = "On"
