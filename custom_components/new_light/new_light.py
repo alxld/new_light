@@ -327,6 +327,7 @@ class NewLight(LightEntity):
                 self._brightnessBT = (
                     255 * (self._brightness) / (self.brightness_threshold)
                 )
+                self._brightnessAT = 0
             if self._debug:
                 _LOGGER.error(
                     f"{self.name} LIGHT ASYNC_TURN_ON: BT: {self._brightnessBT}, AT: {self._brightnessAT}"
@@ -402,18 +403,19 @@ class NewLight(LightEntity):
             # Use for other modes, like specific color or temperatures
             await self.entities[f].turn_on_specific(data)
 
-        if self.has_brightness_threshold and (
-            self._brightness > self.brightness_threshold
-        ):
+        if self.has_brightness_threshold:
             # Process second entity if over brightness threshold
             if rl:
                 # Turn on second entity using RightLight
-                await self.entities[r[0]].turn_on(
-                    brightness=self._brightnessAT,
-                    brightness_override=self._brightness_override,
-                    mode=rlmode,
-                    transition=data["transition"],
-                )
+                if self._brightnessBT == 0:
+                    await self.entries[r[0]].disable_and_turn_off()
+                else:
+                    await self.entities[r[0]].turn_on(
+                        brightness=self._brightnessAT,
+                        brightness_override=self._brightness_override,
+                        mode=rlmode,
+                        transition=data["transition"],
+                    )
             else:
                 # Use for other modes, like specific color or temperatures
                 await self.entities[r[0]].turn_on_specific(data)
