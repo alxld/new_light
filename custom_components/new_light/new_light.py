@@ -91,6 +91,10 @@ class NewLight(LightEntity):
 
         self._brightness = 0
         """Light's current brightness"""
+        self._brightnessBT = 0
+        """Light's current below-threhold brightness (i.e. first entity brightness)"""
+        self._brightnessAT = 0
+        """Light's current above-threhold brightness (i.e. second entity brightness)"""
         self._brightness_override = 0
         """Allow brightness above 255 (for going brighter than RightLight default)"""
         self._hs_color: Optional[Tuple[float, float]] = None
@@ -311,6 +315,19 @@ class NewLight(LightEntity):
         elif self._brightness == 0:
             self._brightness = 255
 
+        if self.has_brightness_threshold:
+            if self._brightness > self.brightness_threshold:
+                self._brightnessBT = 255
+                self._brightnessAT = (
+                    255
+                    * (self._brightness - self.brightness_threshold)
+                    / (255 - self.brightness_threshold)
+                )
+            else:
+                self._brightnessBT = (
+                    255 * (self._brightness) / (self.brightness_threshold)
+                )
+
         if "source" in kwargs and kwargs["source"] == "MotionSensor":
             pass
         else:
@@ -361,10 +378,10 @@ class NewLight(LightEntity):
         if rl:
             # Turn on light using RightLight
             await self.entities[f].turn_on(
-                brightness=self._brightness,
+                brightness=self._brightnessBT,
                 brightness_override=self._brightness_override,
                 mode=rlmode,
-                transition=data['transition']
+                transition=data["transition"],
             )
         else:
             # Use for other modes, like specific color or temperatures
@@ -377,10 +394,10 @@ class NewLight(LightEntity):
             if rl:
                 # Turn on second entity using RightLight
                 await self.entities[r[0]].turn_on(
-                    brightness=self._brightness,
+                    brightness=self._brightnessAT,
                     brightness_override=self._brightness_override,
                     mode=rlmode,
-                    transition=data['transition']
+                    transition=data["transition"],
                 )
             else:
                 # Use for other modes, like specific color or temperatures
