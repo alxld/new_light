@@ -327,6 +327,10 @@ class NewLight(LightEntity):
                 self._brightnessBT = (
                     255 * (self._brightness) / (self.brightness_threshold)
                 )
+            if self._debug:
+                _LOGGER.error(
+                    f"{self.name} LIGHT ASYNC_TURN_ON: BT: {self._brightnessBT}, AT: {self._brightnessAT}"
+                )
 
         if "source" in kwargs and kwargs["source"] == "MotionSensor":
             pass
