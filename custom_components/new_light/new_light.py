@@ -570,7 +570,7 @@ class NewLight(LightEntity):
 
                     rl = self.entities[ent]
                     await rl.turn_on_specific(
-                        {"entity_id": ent, "brightness": 255, "rgb_color": [r, g, b]}
+                        {"entity_id": ent, "rgb_color": [r, g, b]}
                     )
 
                 elif command[0] == "Scene":
