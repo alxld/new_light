@@ -412,7 +412,7 @@ class NewLight(LightEntity):
                         thisbr = self._brightnessBT
 
                     await self.entities[f].turn_on(
-                        brightness=thisbr
+                        brightness=thisbr,
                         brightness_override=self._brightness_override,
                         mode=rlmode,
                         transition=data["transition"],
@@ -442,12 +442,14 @@ class NewLight(LightEntity):
                         await self.entries[r[0]].disable_and_turn_off()
                     else:
                         if ent in self.brightness_multiplier:
-                            thisbr = self._brightnessAT * self.brightness_multiplier[ent]
+                            thisbr = (
+                                self._brightnessAT * self.brightness_multiplier[ent]
+                            )
                         else:
                             thisbr = self._brightnessAT
 
                         await self.entities[r[0]].turn_on(
-                            brightness=thisbr
+                            brightness=thisbr,
                             brightness_override=self._brightness_override,
                             mode=rlmode,
                             transition=data["transition"],
