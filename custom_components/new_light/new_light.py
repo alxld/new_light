@@ -53,6 +53,15 @@ class NewLight(LightEntity):
         """Dictionary of entities.  Each will be a rightlight object and be addressable from the json buttonmap.  The first
         added entity will be the default entity for this light.  The second entity will be used for brightness threshold."""
 
+        self.entities_below_threshold = []
+        """List of entities to enable when brightness is below the threshold.  If empty, will use first entity."""
+
+        self.entities_above_threshold = []
+        """List of entities to enable when brightness is above the threshold.  If empty, will use second entity."""
+
+        self.brightness_multiplier = {}
+        """Dictionary of entity keys to brightness multipliers"""
+
         self.has_switch = False
         """Does this light have an associated switch?  Override to set to true if needed"""
 
@@ -383,42 +392,69 @@ class NewLight(LightEntity):
         for ent in r:
             await self.entities[ent].disable()
 
-        if rl:
-            # Turn on light using RightLight
-            if self.has_brightness_threshold:
-                await self.entities[f].turn_on(
-                    brightness=self._brightnessBT,
-                    brightness_override=self._brightness_override,
-                    mode=rlmode,
-                    transition=data["transition"],
-                )
-            else:
-                await self.entities[f].turn_on(
-                    brightness=self._brightness,
-                    brightness_override=self._brightness_override,
-                    mode=rlmode,
-                    transition=data["transition"],
-                )
+        if len(self.entities_below_threshold) > 0:
+            b_ents = self.entities_below_threshold
         else:
-            # Use for other modes, like specific color or temperatures
-            await self.entities[f].turn_on_specific(data)
+            b_ents = f
 
-        if self.has_brightness_threshold:
-            # Process second entity if over brightness threshold
+        if len(self.entities_above_threshold) > 0:
+            a_ents = self.entities_above_threshold
+        else:
+            a_ents = r[0]
+
+        for ent in b_ents:
             if rl:
-                # Turn on second entity using RightLight
-                if self._brightnessBT == 0:
-                    await self.entries[r[0]].disable_and_turn_off()
+                # Turn on light using RightLight
+                if self.has_brightness_threshold:
+                    if ent in self.brightness_multiplier:
+                        thisbr = self._brightnessBT * self.brightness_multiplier[ent]
+                    else:
+                        thisbr = self._brightnessBT
+
+                    await self.entities[f].turn_on(
+                        brightness=thisbr
+                        brightness_override=self._brightness_override,
+                        mode=rlmode,
+                        transition=data["transition"],
+                    )
                 else:
-                    await self.entities[r[0]].turn_on(
-                        brightness=self._brightnessAT,
+                    if ent in self.brightness_multiplier:
+                        thisbr = self._brightness * self.brightness_multiplier[ent]
+                    else:
+                        thisbr = self._brightness
+
+                    await self.entities[f].turn_on(
+                        brightness=self._brightness,
                         brightness_override=self._brightness_override,
                         mode=rlmode,
                         transition=data["transition"],
                     )
             else:
                 # Use for other modes, like specific color or temperatures
-                await self.entities[r[0]].turn_on_specific(data)
+                await self.entities[f].turn_on_specific(data)
+
+        if self.has_brightness_threshold:
+            for ent in a_ents:
+                # Process second entity if over brightness threshold
+                if rl:
+                    # Turn on second entity using RightLight
+                    if self._brightnessBT == 0:
+                        await self.entries[r[0]].disable_and_turn_off()
+                    else:
+                        if ent in self.brightness_multiplier:
+                            thisbr = self._brightnessAT * self.brightness_multiplier[ent]
+                        else:
+                            thisbr = self._brightnessAT
+
+                        await self.entities[r[0]].turn_on(
+                            brightness=thisbr
+                            brightness_override=self._brightness_override,
+                            mode=rlmode,
+                            transition=data["transition"],
+                        )
+                else:
+                    # Use for other modes, like specific color or temperatures
+                    await self.entities[r[0]].turn_on_specific(data)
 
         self.async_schedule_update_ha_state(force_refresh=True)
 
