@@ -561,6 +561,18 @@ class NewLight(LightEntity):
                         await rl.disable_and_turn_off()
                     else:
                         await rl.turn_on(brightness=val, brightness_override=0)
+                elif command[0] == "Color":
+                    ent = command[1]
+                    r, g, b = command[2:]
+
+                    if not ent in self.entities:
+                        self.entities[ent] = RightLight(ent, self.hass, self._debug_rl)
+
+                    rl = self.entities[ent]
+                    await rl.turn_on_specific(
+                        {"entity_id": ent, "brightness": 255, "rgb_color": [r, g, b]}
+                    )
+
                 elif command[0] == "Scene":
                     await self.hass.services.async_call(
                         "scene", "turn_on", {"entity_id": command[1]}
