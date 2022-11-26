@@ -400,7 +400,10 @@ class NewLight(LightEntity):
         if len(self.entities_above_threshold) > 0:
             a_ents = self.entities_above_threshold
         else:
-            a_ents = r[0]
+            if len(r) > 0:
+                a_ents = r[0]
+            else:
+                a_ents = []
 
         for ent in b_ents:
             if rl:
