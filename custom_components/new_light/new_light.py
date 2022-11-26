@@ -414,7 +414,7 @@ class NewLight(LightEntity):
                     else:
                         thisbr = self._brightnessBT
 
-                    await self.entities[f].turn_on(
+                    await self.entities[ent].turn_on(
                         brightness=thisbr,
                         brightness_override=self._brightness_override,
                         mode=rlmode,
@@ -426,7 +426,7 @@ class NewLight(LightEntity):
                     else:
                         thisbr = self._brightness
 
-                    await self.entities[f].turn_on(
+                    await self.entities[ent].turn_on(
                         brightness=self._brightness,
                         brightness_override=self._brightness_override,
                         mode=rlmode,
@@ -442,7 +442,7 @@ class NewLight(LightEntity):
                 if rl:
                     # Turn on second entity using RightLight
                     if self._brightnessBT == 0:
-                        await self.entries[r[0]].disable_and_turn_off()
+                        await self.entries[ent].disable_and_turn_off()
                     else:
                         if ent in self.brightness_multiplier:
                             thisbr = (
@@ -451,7 +451,7 @@ class NewLight(LightEntity):
                         else:
                             thisbr = self._brightnessAT
 
-                        await self.entities[r[0]].turn_on(
+                        await self.entities[ent].turn_on(
                             brightness=thisbr,
                             brightness_override=self._brightness_override,
                             mode=rlmode,
@@ -459,7 +459,7 @@ class NewLight(LightEntity):
                         )
                 else:
                     # Use for other modes, like specific color or temperatures
-                    await self.entities[r[0]].turn_on_specific(data)
+                    await self.entities[ent].turn_on_specific(data)
 
         self.async_schedule_update_ha_state(force_refresh=True)
 
