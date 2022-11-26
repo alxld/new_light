@@ -564,13 +564,14 @@ class NewLight(LightEntity):
                 elif command[0] == "Color":
                     ent = command[1]
                     r, g, b = command[2:]
+                    br = sum([r, g, b]) / 3
 
                     if not ent in self.entities:
                         self.entities[ent] = RightLight(ent, self.hass, self._debug_rl)
 
                     rl = self.entities[ent]
                     await rl.turn_on_specific(
-                        {"entity_id": ent, "rgb_color": [r, g, b]}
+                        {"entity_id": ent, "rgb_color": [r, g, b], "brightness": br}
                     )
 
                 elif command[0] == "Scene":
