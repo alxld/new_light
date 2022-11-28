@@ -434,7 +434,7 @@ class NewLight(LightEntity):
                     )
             else:
                 # Use for other modes, like specific color or temperatures
-                await self.entities[f].turn_on_specific(data)
+                await self.entities[ent].turn_on_specific(data)
 
         if self.has_brightness_threshold:
             for ent in a_ents:
