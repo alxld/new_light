@@ -760,10 +760,23 @@ class NewLight(LightEntity):
 
         ent = ev["data"]["entity_id"]
         ns = ev["data"]["new_state"].state
+        br = ev["data"]["new_state"].brightness
 
         if ns == "on":
-            self._others[ent] = True
-            await self.async_turn_on(brightness=self.other_light_trackers[ent])
+            # Grab other light's brightness
+            self._others[ent] = br
+
+            # 0 brightness value in other array means to copy brightness from that entity
+            if self.other_light_trackers[ent] == 0:
+                this_br = br
+            else:
+                this_br = self.other_light_trackers[ent]
+
+            # Turn on if not already on or new other light is brighter
+            if (self._is_on == False) or (self._brightness < this_br):
+                await self.async_turn_on(brightness=this_br)
+
+            # Feature to turn off other lights when this light goes on
             if self.turn_off_other_lights:
                 await self.hass.services.async_call(
                     "light", "turn_off", {"entity_id": ent}
