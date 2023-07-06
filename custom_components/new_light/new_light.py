@@ -760,7 +760,10 @@ class NewLight(LightEntity):
 
         ent = ev["data"]["entity_id"]
         ns = ev["data"]["new_state"].state
-        br = ev["data"]["new_state"].brightness
+        if "brightness" in ev["data"]["new_state"].attributes:
+            br = ev["data"]["new_state"].attributes["brightness"]
+        else:
+            br = 255
 
         if ns == "on":
             # Grab other light's brightness
