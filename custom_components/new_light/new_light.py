@@ -532,7 +532,7 @@ class NewLight(LightEntity):
                             _LOGGER.debug(
                                 f"{self.name} LIGHT ASYNC_TURN_ON: AT RL turning off {ent}"
                             )
-                        await self.entries[ent].disable_and_turn_off()
+                        await self.entities[ent].disable_and_turn_off()
                     else:
                         if ent in self.brightness_multiplier:
                             thisbr = (
@@ -668,7 +668,7 @@ class NewLight(LightEntity):
 
     async def async_update(self):
         """Query light and determine the state."""
-        #if self._debug:
+        # if self._debug:
         #    _LOGGER.debug(f"{self.name} LIGHT ASYNC_UPDATE")
 
         f, r = self.getEntityNames()
