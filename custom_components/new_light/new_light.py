@@ -594,6 +594,7 @@ class NewLight(LightEntity):
                 f"{self.name} LIGHT ASYNC_TURN_OFF: {kwargs, self._switched_on, self._occupancy}"
             )
 
+        if self._switched_on or any(self.motion_disable_trackers.values()):
         # If the light wasn't switched on, or if there is no occupancy, turn off
         if (self._switched_on == False) or (self._occupancy == False):
             if self._debug:
@@ -605,9 +606,14 @@ class NewLight(LightEntity):
                     f"{self.name} LIGHT ASYNC_TURN_OFF: Switching to motion sensor mode"
                 )
             self._switched_on = False
-            await self.async_turn_on(
-                brightness=self.motion_sensor_brightness, source="MotionSensor"
-            )
+
+            # Turn off if motion disable entites are on, otherwise switch to motion sensor mode
+            if any(self.motion_disable_trackers.values()):
+                await self._async_turn_off_helper(**kwargs)
+            else:
+                await self.async_turn_on(
+                    brightness=self.motion_sensor_brightness, source="MotionSensor"
+                )
 
     async def _async_turn_off_helper(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
