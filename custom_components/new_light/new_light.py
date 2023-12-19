@@ -594,7 +594,6 @@ class NewLight(LightEntity):
                 f"{self.name} LIGHT ASYNC_TURN_OFF: {kwargs, self._switched_on, self._occupancy}"
             )
 
-        if self._switched_on or any(self.motion_disable_trackers.values()):
         # If the light wasn't switched on, or if there is no occupancy, turn off
         if (self._switched_on == False) or (self._occupancy == False):
             if self._debug:
